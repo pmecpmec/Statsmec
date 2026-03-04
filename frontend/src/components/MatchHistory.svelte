@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
+  import Scoreboard from './Scoreboard.svelte';
 
   let { apiUrl = 'http://127.0.0.1:8000/api/v1' } = $props();
 
@@ -15,6 +16,25 @@
     result: string | null;
   };
 
+  type ScoreboardData = {
+    match_id: number;
+    map_name: string | null;
+    score_team: number | null;
+    score_opponent: number | null;
+    result: string | null;
+    ct: any[];
+    t: any[];
+  };
+
+  let matches: Match[] = $state([]);
+  let loading = $state(true);
+  let error = $state('');
+  let selectedId: number | null = $state(null);
+  let scoreboard: ScoreboardData | null = $state(null);
+  let scoreboardLoading = $state(false);
+  let tab: 'scoreboard' | 'rounds' = $state('scoreboard');
+  let pollInterval: ReturnType<typeof setInterval> | null = $state(null);
+
   type Round = {
     id: number;
     round_number: number;
@@ -24,11 +44,6 @@
     weapon_used: string | null;
     weapon_stats: { weapon_name: string; shots: number; hits: number; headshots: number }[];
   };
-
-  let matches: Match[] = $state([]);
-  let loading = $state(true);
-  let error = $state('');
-  let selectedId: number | null = $state(null);
   let rounds: Round[] = $state([]);
   let roundsLoading = $state(false);
 
@@ -61,8 +76,24 @@
     return (d ?? 0) > 0 ? 'py-1.5 px-2 text-red-400' : 'py-1.5 px-2';
   }
 
-  async function loadRounds(matchId: number) {
+  async function selectMatch(matchId: number) {
     selectedId = matchId;
+    if (tab === 'scoreboard') await loadScoreboard(matchId);
+    else await loadRounds(matchId);
+  }
+
+  async function loadScoreboard(matchId: number) {
+    scoreboardLoading = true;
+    try {
+      const res = await fetch(`${apiUrl}/users/1/matches/${matchId}/scoreboard`);
+      scoreboard = await res.json();
+    } catch {
+      scoreboard = null;
+    }
+    scoreboardLoading = false;
+  }
+
+  async function loadRounds(matchId: number) {
     roundsLoading = true;
     try {
       const res = await fetch(`${apiUrl}/users/1/matches/${matchId}/rounds`);
@@ -73,15 +104,35 @@
     roundsLoading = false;
   }
 
-  onMount(async () => {
+  async function switchTab(t: 'scoreboard' | 'rounds') {
+    tab = t;
+    if (!selectedId) return;
+    if (t === 'scoreboard') await loadScoreboard(selectedId);
+    else await loadRounds(selectedId);
+  }
+
+  async function fetchMatches() {
     try {
       const res = await fetch(`${apiUrl}/users/1/matches?limit=20`);
-      matches = await res.json();
-      if (matches.length) loadRounds(matches[0].id);
+      const newMatches: Match[] = await res.json();
+      if (newMatches.length && (!matches.length || newMatches[0].id !== matches[0].id)) {
+        matches = newMatches;
+        if (!selectedId && matches.length) selectMatch(matches[0].id);
+      }
     } catch {
-      error = 'Could not load matches. Is the backend running?';
+      if (!matches.length) error = 'Could not load matches. Is the backend running?';
     }
+  }
+
+  onMount(async () => {
+    await fetchMatches();
+    if (matches.length && !selectedId) selectMatch(matches[0].id);
     loading = false;
+    pollInterval = setInterval(fetchMatches, 30000);
+  });
+
+  onDestroy(() => {
+    if (pollInterval) clearInterval(pollInterval);
   });
 </script>
 
@@ -103,7 +154,7 @@
       </thead>
       <tbody>
         {#each matches as m (m.id)}
-          <tr class={rowClass(m.id)} onclick={() => loadRounds(m.id)}>
+          <tr class={rowClass(m.id)} onclick={() => selectMatch(m.id)}>
             <td class="py-2.5 px-3 text-zinc-400">{timeAgo(m.started_at)}</td>
             <td class="py-2.5 px-3 font-medium">{mapDisplay(m.map_name)}</td>
             <td class="py-2.5 px-3">
@@ -132,8 +183,21 @@
   </div>
 
   {#if selectedId}
-    <div class="mt-6 pt-4 border-t border-white border-opacity-10">
-      <h4 class="text-sm font-semibold text-zinc-400 mb-3 uppercase tracking-wider">Round Breakdown</h4>
+    <!-- Tab switcher -->
+    <div class="mt-6 flex gap-1 border-b border-white border-opacity-10 mb-4">
+      <button
+        class={tab === 'scoreboard' ? 'px-4 py-2 text-sm font-semibold text-purple-400 border-b-2 border-purple-500' : 'px-4 py-2 text-sm text-zinc-500 hover:text-zinc-300 transition-colors'}
+        onclick={() => switchTab('scoreboard')}
+      >Scoreboard</button>
+      <button
+        class={tab === 'rounds' ? 'px-4 py-2 text-sm font-semibold text-purple-400 border-b-2 border-purple-500' : 'px-4 py-2 text-sm text-zinc-500 hover:text-zinc-300 transition-colors'}
+        onclick={() => switchTab('rounds')}
+      >Round Breakdown</button>
+    </div>
+
+    {#if tab === 'scoreboard'}
+      <Scoreboard data={scoreboard} loading={scoreboardLoading} />
+    {:else}
       {#if roundsLoading}
         <p class="text-zinc-500 text-sm">Loading rounds...</p>
       {:else if rounds.length === 0}
@@ -179,6 +243,6 @@
           </table>
         </div>
       {/if}
-    </div>
+    {/if}
   {/if}
 {/if}

@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy import func, select
@@ -98,4 +100,63 @@ async def get_profile(db: AsyncSession = Depends(get_db)) -> ProfileOverview:
         total_hours=9620,
         favorite_map=favorite_map,
         favorite_weapon=favorite_weapon,
+    )
+
+
+class LiveStatus(BaseModel):
+    status: str  # "offline" | "online" | "in_game"
+    current_match_id: int | None = None
+    last_match_id: int | None = None
+    last_match_ago: str | None = None
+    total_matches: int = 0
+
+
+@router.get("/status", response_model=LiveStatus)
+async def get_live_status(db: AsyncSession = Depends(get_db)) -> LiveStatus:
+    """
+    Returns pmec's current status. Checks if there's a very recent match
+    (within last 60 min) to infer "in_game", otherwise "online" or "offline".
+    With real FACEIT API keys, this would check ongoing matches directly.
+    """
+    latest_q = await db.execute(
+        select(Match)
+        .where(Match.user_id == 1)
+        .order_by(Match.started_at.desc())
+        .limit(1)
+    )
+    latest = latest_q.scalar_one_or_none()
+
+    count_q = await db.execute(select(func.count(Match.id)).where(Match.user_id == 1))
+    total = count_q.scalar() or 0
+
+    if not latest:
+        return LiveStatus(status="offline", total_matches=total)
+
+    now = datetime.now(tz=timezone.utc)
+    started = latest.started_at
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=timezone.utc)
+    match_end = started + timedelta(seconds=latest.duration_seconds or 2400)
+    diff = now - started
+
+    if diff < timedelta(minutes=60) and now < match_end:
+        status = "in_game"
+        current_match_id = latest.id
+    else:
+        status = "online"
+        current_match_id = None
+
+    if diff < timedelta(hours=1):
+        ago = f"{int(diff.total_seconds() // 60)}m ago"
+    elif diff < timedelta(days=1):
+        ago = f"{int(diff.total_seconds() // 3600)}h ago"
+    else:
+        ago = f"{diff.days}d ago"
+
+    return LiveStatus(
+        status=status,
+        current_match_id=current_match_id,
+        last_match_id=latest.id,
+        last_match_ago=ago,
+        total_matches=total,
     )

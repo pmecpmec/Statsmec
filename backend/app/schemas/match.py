@@ -25,3 +25,28 @@ class RoundDetail(BaseModel):
     class Config:
         from_attributes = True
 
+
+class PlayerScore(BaseModel):
+    player_name: str
+    team: str
+    is_self: bool
+    kills: int
+    deaths: int
+    assists: int
+    adr: float
+    headshot_pct: float
+    rating: float
+
+    class Config:
+        from_attributes = True
+
+
+class Scoreboard(BaseModel):
+    match_id: int
+    map_name: str | None
+    score_team: int | None
+    score_opponent: int | None
+    result: str | None
+    ct: List[PlayerScore] = []
+    t: List[PlayerScore] = []
+

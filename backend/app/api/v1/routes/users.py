@@ -5,9 +5,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.models.match import Match, Round, WeaponStat
+from app.models.match import Match, MatchPlayer, Round, WeaponStat
 from app.models.user import User
-from app.schemas.match import RoundDetail, WeaponStatDetail
+from app.schemas.match import PlayerScore, RoundDetail, Scoreboard, WeaponStatDetail
 from app.schemas.user import MatchSummary, User as UserSchema, UserCreate
 from app.services.cache import cached
 from app.services.external_clients import fetch_steam_match_history, fetch_faceit_match_history
@@ -118,6 +118,38 @@ async def get_match_rounds(
         )
 
     return payload
+
+
+@router.get("/{user_id}/matches/{match_id}/scoreboard", response_model=Scoreboard)
+async def get_match_scoreboard(
+    user_id: int,
+    match_id: int,
+    db: AsyncSession = Depends(get_db),
+) -> Scoreboard:
+    match = await db.get(Match, match_id)
+    if not match or match.user_id != user_id:
+        raise HTTPException(status_code=404, detail="Match not found for user")
+
+    stmt = (
+        select(MatchPlayer)
+        .where(MatchPlayer.match_id == match_id)
+        .order_by(MatchPlayer.team, MatchPlayer.rating.desc())
+    )
+    result = await db.execute(stmt)
+    players = result.scalars().all()
+
+    ct = [PlayerScore.model_validate(p) for p in players if p.team == "CT"]
+    t = [PlayerScore.model_validate(p) for p in players if p.team == "T"]
+
+    return Scoreboard(
+        match_id=match.id,
+        map_name=match.map_name,
+        score_team=match.score_team,
+        score_opponent=match.score_opponent,
+        result=match.result,
+        ct=ct,
+        t=t,
+    )
 
 
 @router.post("/{user_id}/sync", response_model=dict)

@@ -20,6 +20,7 @@ class Match(Base):
 
     user = relationship("User", back_populates="matches")
     rounds: Mapped[list["Round"]] = relationship(back_populates="match", cascade="all, delete-orphan")
+    players: Mapped[list["MatchPlayer"]] = relationship(back_populates="match", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("ix_match_user_started_at", "user_id", "started_at"),
@@ -50,4 +51,25 @@ class WeaponStat(Base):
     headshots: Mapped[int] = mapped_column(Integer)
 
     round = relationship("Round", back_populates="weapon_stats")
+
+
+class MatchPlayer(Base):
+    """Scoreboard row — one per player per match (10 rows per match)."""
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    match_id: Mapped[int] = mapped_column(ForeignKey("match.id"), index=True)
+    player_name: Mapped[str] = mapped_column(String(64))
+    team: Mapped[str] = mapped_column(String(4))  # CT / T
+    is_self: Mapped[bool] = mapped_column(default=False)
+    kills: Mapped[int] = mapped_column(Integer, default=0)
+    deaths: Mapped[int] = mapped_column(Integer, default=0)
+    assists: Mapped[int] = mapped_column(Integer, default=0)
+    adr: Mapped[float] = mapped_column(default=0.0)
+    headshot_pct: Mapped[float] = mapped_column(default=0.0)
+    rating: Mapped[float] = mapped_column(default=1.0)
+
+    match = relationship("Match", back_populates="players")
+
+    __table_args__ = (
+        Index("ix_matchplayer_match_team", "match_id", "team"),
+    )
 
