@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    container_name: statsmec-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-statsmec}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-statsmec}
+      POSTGRES_DB: ${POSTGRES_DB:-statsmec}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: statsmec-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: statsmec-backend
+    depends_on:
+      - db
+      - redis
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-statsmec}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-statsmec}
+      POSTGRES_DB: ${POSTGRES_DB:-statsmec}
+      REDIS_URL: redis://redis:6379/0
+      STEAM_API_KEY: ${STEAM_API_KEY:-}
+      FACEIT_API_KEY: ${FACEIT_API_KEY:-}
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: statsmec-frontend
+    depends_on:
+      - backend
+    environment:
+      VITE_API_BASE_URL: http://backend:8000/api/v1
+    ports:
+      - "5173:5173"
+
+volumes:
+  db_data:
+
