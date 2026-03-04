@@ -31,9 +31,22 @@ type RoundDetail = {
   weapon_stats: WeaponStatDetail[];
 };
 
-type Props = {
-  userId: number;
-};
+type Props = { userId: number };
+
+function formatMap(name: string | null): string {
+  if (!name) return "—";
+  return name.replace("de_", "").charAt(0).toUpperCase() + name.replace("de_", "").slice(1);
+}
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const hours = Math.floor(diff / 3_600_000);
+  if (hours < 1) return "just now";
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "yesterday";
+  return `${days}d ago`;
+}
 
 export const MatchHistoryPanel: React.FC<Props> = ({ userId }) => {
   const [matches, setMatches] = useState<MatchSummary[]>([]);
@@ -51,63 +64,39 @@ export const MatchHistoryPanel: React.FC<Props> = ({ userId }) => {
       .then((data) => {
         if (active) {
           setMatches(data);
-          if (data.length && !selectedMatchId) {
-            setSelectedMatchId(data[0].id);
-          }
+          if (data.length && !selectedMatchId) setSelectedMatchId(data[0].id);
         }
       })
-      .catch((err: unknown) => {
-        if (active) setError("Failed to load match history.");
-        // eslint-disable-next-line no-console
-        console.error(err);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
+      .catch(() => { if (active) setError("Failed to load match history."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [userId]);
 
   useEffect(() => {
-    if (!selectedMatchId) {
-      setRounds(null);
-      return;
-    }
+    if (!selectedMatchId) { setRounds(null); return; }
     let active = true;
     setRoundsError(null);
     cachedGet<RoundDetail[]>(`/users/${userId}/matches/${selectedMatchId}/rounds`)
-      .then((data) => {
-        if (active) setRounds(data);
-      })
-      .catch((err: unknown) => {
-        if (active) setRoundsError("Failed to load round breakdown.");
-        // eslint-disable-next-line no-console
-        console.error(err);
-      });
-
-    return () => {
-      active = false;
-    };
+      .then((data) => { if (active) setRounds(data); })
+      .catch(() => { if (active) setRoundsError("Failed to load round breakdown."); });
+    return () => { active = false; };
   }, [userId, selectedMatchId]);
 
   return (
     <div>
-      <h2>Match History</h2>
-      {loading && <p>Loading…</p>}
+      <h2>Recent Matches</h2>
+      {loading && <p style={{ color: "var(--text-dim)" }}>Loading...</p>}
       {error && <p className="error">{error}</p>}
       {!loading && !error && (
         <>
           <table className="table">
             <thead>
               <tr>
-                <th>Started</th>
-                <th>Provider</th>
-                <th>Match ID</th>
+                <th>When</th>
                 <th>Map</th>
                 <th>Score</th>
                 <th>Result</th>
+                <th>Duration</th>
               </tr>
             </thead>
             <tbody>
@@ -118,62 +107,81 @@ export const MatchHistoryPanel: React.FC<Props> = ({ userId }) => {
                   onClick={() => setSelectedMatchId(m.id)}
                   style={{ cursor: "pointer" }}
                 >
-                  <td>{new Date(m.started_at).toLocaleString()}</td>
-                  <td>{m.provider.toUpperCase()}</td>
-                  <td>{m.external_match_id}</td>
-                  <td>{m.map_name ?? "Unknown"}</td>
+                  <td>{timeAgo(m.started_at)}</td>
+                  <td>{formatMap(m.map_name)}</td>
                   <td>
-                    {m.score_team ?? "-"} : {m.score_opponent ?? "-"}
+                    <span className={m.result === "win" ? "win-text" : "loss-text"}>
+                      {m.score_team ?? "-"}
+                    </span>
+                    {" : "}
+                    {m.score_opponent ?? "-"}
                   </td>
-                  <td className={m.result ?? undefined}>{m.result ?? "-"}</td>
+                  <td>
+                    <span className={m.result === "win" ? "win-text" : "loss-text"}>
+                      {m.result === "win" ? "W" : m.result === "loss" ? "L" : "-"}
+                    </span>
+                  </td>
+                  <td>{m.duration_seconds ? `${Math.round(m.duration_seconds / 60)}m` : "-"}</td>
                 </tr>
               ))}
             </tbody>
           </table>
 
-          <div style={{ marginTop: "0.75rem" }}>
-            <h3>Round‑by‑round breakdown</h3>
-            {roundsError && <p className="error">{roundsError}</p>}
-            {!roundsError && !rounds && <p>Select a match to see details.</p>}
-            {!roundsError && rounds && !rounds.length && (
-              <p>No round data available for this match yet.</p>
-            )}
-            {!roundsError && rounds && rounds.length > 0 && (
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Winner</th>
-                    <th>Kills</th>
-                    <th>Deaths</th>
-                    <th>Primary Weapon</th>
-                    <th>Weapon Stats</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rounds.map((r) => (
-                    <tr key={r.id}>
-                      <td>{r.round_number}</td>
-                      <td>{r.winning_team ?? "-"}</td>
-                      <td>{r.kills ?? "-"}</td>
-                      <td>{r.deaths ?? "-"}</td>
-                      <td>{r.weapon_used ?? "-"}</td>
-                      <td>
-                        {r.weapon_stats.map((ws) => (
-                          <span key={ws.weapon_name} style={{ marginRight: "0.5rem" }}>
-                            {ws.weapon_name} ({ws.hits}/{ws.shots})
-                          </span>
-                        ))}
-                      </td>
+          {selectedMatchId && (
+            <div style={{ marginTop: "1rem" }}>
+              <h3 style={{ fontSize: "0.85rem", color: "var(--text-dim)", marginBottom: "0.5rem" }}>
+                Round Breakdown
+              </h3>
+              {roundsError && <p className="error">{roundsError}</p>}
+              {!roundsError && !rounds && <p style={{ color: "var(--text-dim)" }}>Loading rounds...</p>}
+              {!roundsError && rounds && !rounds.length && (
+                <p style={{ color: "var(--text-dim)" }}>No round data for this match.</p>
+              )}
+              {!roundsError && rounds && rounds.length > 0 && (
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Side</th>
+                      <th>K</th>
+                      <th>D</th>
+                      <th>Weapon</th>
+                      <th>Accuracy</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+                  </thead>
+                  <tbody>
+                    {rounds.map((r) => (
+                      <tr key={r.id}>
+                        <td>{r.round_number}</td>
+                        <td>{r.winning_team ?? "-"}</td>
+                        <td className={r.kills && r.kills > 0 ? "win-text" : undefined}>
+                          {r.kills ?? 0}
+                        </td>
+                        <td className={r.deaths && r.deaths > 0 ? "loss-text" : undefined}>
+                          {r.deaths ?? 0}
+                        </td>
+                        <td>{r.weapon_used ?? "-"}</td>
+                        <td style={{ fontSize: "0.75rem", color: "var(--text-dim)" }}>
+                          {r.weapon_stats.map((ws) => (
+                            <span key={ws.weapon_name} style={{ marginRight: "0.5rem" }}>
+                              {ws.hits}/{ws.shots}
+                              {ws.headshots > 0 && (
+                                <span style={{ color: "var(--orange)", marginLeft: "2px" }}>
+                                  ({ws.headshots} HS)
+                                </span>
+                              )}
+                            </span>
+                          ))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
         </>
       )}
     </div>
   );
 };
-

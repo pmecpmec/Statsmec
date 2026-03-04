@@ -1,8 +1,12 @@
 from functools import lru_cache
 from typing import List
 
-from pydantic import AnyHttpUrl, Field
+from pydantic import Field
 from pydantic_settings import BaseSettings
+
+
+PMEC_STEAM_ID = "76561198245080640"
+PMEC_FACEIT_NICKNAME = "pmec"
 
 
 class Settings(BaseSettings):
@@ -55,4 +59,3 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
-

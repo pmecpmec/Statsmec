@@ -6,7 +6,7 @@ import { MatchHistoryPanel } from "./MatchHistoryPanel";
 describe("MatchHistoryPanel", () => {
   it("renders heading", () => {
     render(<MatchHistoryPanel userId={1} />);
-    expect(screen.getByText("Match History")).toBeDefined();
+    expect(screen.getByText("Recent Matches")).toBeDefined();
   });
 });
 
