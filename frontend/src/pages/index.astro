@@ -1,6 +1,6 @@
 ---
 import MainLayout from '../layouts/MainLayout.astro';
-import LiveStatus from '../components/LiveStatus.svelte';
+import ProfileHero from '../components/ProfileHero.svelte';
 import MatchHistory from '../components/MatchHistory.svelte';
 import PerformanceChart from '../components/PerformanceChart.svelte';
 import WeaponBreakdown from '../components/WeaponBreakdown.svelte';
@@ -9,68 +9,8 @@ const API = import.meta.env.PUBLIC_API_URL ?? 'http://127.0.0.1:8000/api/v1';
 ---
 
 <MainLayout>
-  <!-- Hero / Profile -->
-  <section id="overview" class="min-h-screen flex items-center pt-24 pb-16">
-    <div class="max-w-6xl mx-auto px-5 w-full">
-      <div class="flex flex-col lg:flex-row items-center gap-12">
-        <!-- Avatar -->
-        <div class="relative reveal">
-          <img
-            src="https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
-            alt="pmec"
-            class="w-44 h-44 md:w-52 md:h-52 rounded-full border-4 border-primary-500 object-cover animate-glow"
-          />
-          <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-primary-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-            LVL 10
-          </div>
-        </div>
-
-        <!-- Identity -->
-        <div class="text-center lg:text-left reveal stagger-1">
-          <h1 class="text-5xl md:text-6xl font-extrabold text-gradient mb-3">pmec</h1>
-          <div class="mb-4">
-            <LiveStatus client:load apiUrl={API} />
-          </div>
-          <div class="flex flex-wrap gap-3 justify-center lg:justify-start">
-            <span class="px-4 py-1.5 rounded-full text-sm font-semibold border border-amber-500/30 bg-amber-500/10 text-amber-400">
-              Global Sentinel
-            </span>
-            <span class="px-4 py-1.5 rounded-full text-sm font-semibold border border-primary-500/30 bg-primary-500/10 text-primary-400">
-              ELO 2616
-            </span>
-            <span class="px-4 py-1.5 rounded-full text-sm font-semibold border border-white/10 bg-white/5 text-zinc-300">
-              9,620h played
-            </span>
-            <span class="px-4 py-1.5 rounded-full text-sm font-semibold border border-white/10 bg-white/5 text-zinc-300">
-              1,242 matches
-            </span>
-          </div>
-        </div>
-
-        <!-- Quick Stats -->
-        <div class="flex-1 w-full lg:w-auto reveal stagger-2">
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div class="stat-card">
-              <span class="text-2xl md:text-3xl font-extrabold text-cs-green">54%</span>
-              <span class="text-xs uppercase tracking-wider text-zinc-500">Win Rate</span>
-            </div>
-            <div class="stat-card">
-              <span class="text-2xl md:text-3xl font-extrabold">1.29</span>
-              <span class="text-xs uppercase tracking-wider text-zinc-500">K/D</span>
-            </div>
-            <div class="stat-card">
-              <span class="text-2xl md:text-3xl font-extrabold text-amber-400">52.4%</span>
-              <span class="text-xs uppercase tracking-wider text-zinc-500">HS %</span>
-            </div>
-            <div class="stat-card">
-              <span class="text-2xl md:text-3xl font-extrabold">671</span>
-              <span class="text-xs uppercase tracking-wider text-zinc-500">Wins</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+  <!-- Hero / Profile (dynamic from API) -->
+  <ProfileHero client:load apiUrl={API} />
 
   <!-- Stats Detail -->
   <section id="stats" class="py-20" style="background: var(--bg-secondary);">

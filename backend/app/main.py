@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.db.session import engine
 from app.models.base import Base
 from app.services.external_clients import faceit_client, steam_client
+from app.services.auto_sync import start_auto_sync, stop_auto_sync
 from app.services.cache import ensure_cache_ready, get_redis_client
 
 
@@ -29,9 +30,11 @@ def create_app() -> FastAPI:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         await ensure_cache_ready()
+        start_auto_sync()
 
     @app.on_event("shutdown")
     async def on_shutdown() -> None:  # pragma: no cover - simple wiring
+        stop_auto_sync()
         await steam_client.aclose()
         await faceit_client.aclose()
         try:

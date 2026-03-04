@@ -5,9 +5,10 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import PMEC_FACEIT_NICKNAME, PMEC_STEAM_ID
+from app.core.config import PMEC_FACEIT_NICKNAME, PMEC_STEAM_ID, settings
 from app.db.session import get_db
 from app.models.match import Match, Round, WeaponStat
+from app.services.auto_sync import _resolve_player_id, _sync_once
 
 
 router = APIRouter()
@@ -29,6 +30,7 @@ class ProfileOverview(BaseModel):
     total_hours: float
     favorite_map: str | None
     favorite_weapon: str | None
+    api_configured: bool
 
 
 @router.get("/", response_model=ProfileOverview)
@@ -100,6 +102,7 @@ async def get_profile(db: AsyncSession = Depends(get_db)) -> ProfileOverview:
         total_hours=9620,
         favorite_map=favorite_map,
         favorite_weapon=favorite_weapon,
+        api_configured=bool(settings.FACEIT_API_KEY),
     )
 
 
@@ -160,3 +163,25 @@ async def get_live_status(db: AsyncSession = Depends(get_db)) -> LiveStatus:
         last_match_ago=ago,
         total_matches=total,
     )
+
+
+class SyncResult(BaseModel):
+    success: bool
+    message: str
+    api_configured: bool
+
+
+@router.post("/sync", response_model=SyncResult)
+async def trigger_sync() -> SyncResult:
+    """Manually trigger a FACEIT data sync."""
+    if not settings.FACEIT_API_KEY:
+        return SyncResult(
+            success=False,
+            message="FACEIT_API_KEY not configured. Add it to backend/.env",
+            api_configured=False,
+        )
+    try:
+        await _sync_once()
+        return SyncResult(success=True, message="Sync complete", api_configured=True)
+    except Exception as e:
+        return SyncResult(success=False, message=str(e), api_configured=True)

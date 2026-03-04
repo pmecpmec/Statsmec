@@ -73,13 +73,25 @@ async def fetch_steam_match_history(steam_id: str, limit: int = 20) -> Dict[str,
     return resp.json()
 
 
+async def fetch_faceit_player_by_nickname(nickname: str) -> Optional[Dict[str, Any]]:
+    """Resolve a FACEIT nickname to full player object (includes player_id, elo, etc)."""
+    if not settings.FACEIT_API_KEY:
+        return None
+    headers = {"Authorization": f"Bearer {settings.FACEIT_API_KEY}"}
+    resp = await faceit_client.get(f"/players?nickname={nickname}", headers=headers)
+    if resp.status_code == 404:
+        return None
+    resp.raise_for_status()
+    return resp.json()
+
+
 async def fetch_faceit_match_history(faceit_id: str, limit: int = 20, game: str = "cs2") -> Dict[str, Any]:
-    """Player match history. Requires game=cs2 (or csgo) for CS matches."""
+    """Player match history. faceit_id must be the player_id UUID."""
     if not settings.FACEIT_API_KEY:
         raise RuntimeError("FACEIT_API_KEY is not configured")
 
     headers = {"Authorization": f"Bearer {settings.FACEIT_API_KEY}"}
-    params = {"offset": 0, "limit": min(limit, 20), "game": game}
+    params = {"offset": 0, "limit": min(limit, 100), "game": game}
     resp = await faceit_client.get(f"/players/{faceit_id}/history", headers=headers, params=params)
     resp.raise_for_status()
     return resp.json()
