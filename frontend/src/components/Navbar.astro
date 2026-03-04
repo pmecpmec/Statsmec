@@ -1,0 +1,37 @@
+---
+const links = [
+  { label: 'Overview', href: '#overview' },
+  { label: 'Stats', href: '#stats' },
+  { label: 'Settings', href: '#settings' },
+  { label: 'Matches', href: '#matches' },
+];
+---
+
+<header
+  class="fixed top-0 left-0 w-full z-50 border-b border-white/10"
+  style="background: rgba(15,15,35,0.92); backdrop-filter: blur(14px);"
+>
+  <nav class="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between">
+    <a href="/" class="text-xl font-extrabold text-gradient tracking-tight">Statsmec</a>
+    <ul class="hidden md:flex items-center gap-7">
+      {links.map((l) => (
+        <li>
+          <a href={l.href} class="text-sm font-medium text-zinc-400 hover:text-primary-400 transition-colors relative group">
+            {l.label}
+            <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-500 transition-all group-hover:w-full" />
+          </a>
+        </li>
+      ))}
+    </ul>
+    <div class="flex items-center gap-3">
+      <a href="https://steamcommunity.com/id/pmec" target="_blank" rel="noreferrer"
+         class="text-xs font-semibold px-3 py-1.5 rounded-full border border-white/10 text-zinc-400 hover:text-white hover:border-primary-500 transition-all">
+        Steam
+      </a>
+      <a href="https://www.faceit.com/en/players/pmec" target="_blank" rel="noreferrer"
+         class="text-xs font-semibold px-3 py-1.5 rounded-full border border-white/10 text-zinc-400 hover:text-white hover:border-primary-500 transition-all">
+        FACEIT
+      </a>
+    </div>
+  </nav>
+</header>
