@@ -6,7 +6,7 @@ from typing import Dict, List
 
 import asyncio
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.match import Match, Round, WeaponStat
@@ -64,8 +64,8 @@ async def compute_win_rate_trend(db: AsyncSession, user_id: int) -> List[WinRate
         select(
             func.date(Match.started_at).label("day"),
             func.count(Match.id).label("matches"),
-            func.sum(func.case((Match.result == "win", 1), else_=0)).label("wins"),
-            func.sum(func.case((Match.result == "loss", 1), else_=0)).label("losses"),
+            func.sum(case((Match.result == "win", 1), else_=0)).label("wins"),
+            func.sum(case((Match.result == "loss", 1), else_=0)).label("losses"),
         )
         .where(Match.user_id == user_id)
         .group_by(func.date(Match.started_at))

@@ -32,5 +32,8 @@ docker-compose.override.yml
 # Redis dump
 dump.rdb
 
+# SQLite
+*.db
+
 # Poetry
 poetry.lock

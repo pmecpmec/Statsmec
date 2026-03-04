@@ -6,7 +6,7 @@ from app.core.config import settings
 from app.db.session import engine
 from app.models.base import Base
 from app.services.external_clients import faceit_client, steam_client
-from app.services.cache import get_redis_client
+from app.services.cache import ensure_cache_ready, get_redis_client
 
 
 def create_app() -> FastAPI:
@@ -26,18 +26,18 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     async def on_startup() -> None:  # pragma: no cover - simple wiring
-        # Ensure database schema exists for local/dev usage.
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-
-        # Touch Redis client so connection pool is ready.
-        _ = get_redis_client()
+        await ensure_cache_ready()
 
     @app.on_event("shutdown")
     async def on_shutdown() -> None:  # pragma: no cover - simple wiring
         await steam_client.aclose()
         await faceit_client.aclose()
-        await get_redis_client().aclose()
+        try:
+            await get_redis_client().aclose()
+        except Exception:
+            pass
 
     app.include_router(api_router, prefix="/api/v1")
 
