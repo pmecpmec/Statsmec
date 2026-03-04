@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { clsx } from 'clsx';
 
   let { apiUrl = 'http://127.0.0.1:8000/api/v1' } = $props();
 
@@ -48,6 +47,20 @@
     return d === 1 ? 'yesterday' : `${d}d ago`;
   }
 
+  function rowClass(id: number): string {
+    const base = 'border-b border-white border-opacity-5 cursor-pointer transition-colors';
+    if (id === selectedId) return base + ' bg-purple-900 border-l-2 border-l-purple-500';
+    return base + ' hover:bg-purple-950';
+  }
+
+  function killClass(k: number | null): string {
+    return (k ?? 0) > 0 ? 'py-1.5 px-2 text-green-400 font-semibold' : 'py-1.5 px-2';
+  }
+
+  function deathClass(d: number | null): string {
+    return (d ?? 0) > 0 ? 'py-1.5 px-2 text-red-400' : 'py-1.5 px-2';
+  }
+
   async function loadRounds(matchId: number) {
     selectedId = matchId;
     roundsLoading = true;
@@ -80,7 +93,7 @@
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
-        <tr class="text-xs uppercase tracking-wider text-zinc-500 border-b border-white/10">
+        <tr class="text-xs uppercase tracking-wider text-zinc-500 border-b border-white border-opacity-10">
           <th class="text-left py-3 px-3">When</th>
           <th class="text-left py-3 px-3">Map</th>
           <th class="text-left py-3 px-3">Score</th>
@@ -90,13 +103,7 @@
       </thead>
       <tbody>
         {#each matches as m (m.id)}
-          <tr
-            class={clsx(
-              'border-b border-white/5 cursor-pointer transition-colors hover:bg-purple-500/10',
-              m.id === selectedId && 'bg-purple-500/15 border-l-2 border-l-purple-500'
-            )}
-            onclick={() => loadRounds(m.id)}
-          >
+          <tr class={rowClass(m.id)} onclick={() => loadRounds(m.id)}>
             <td class="py-2.5 px-3 text-zinc-400">{timeAgo(m.started_at)}</td>
             <td class="py-2.5 px-3 font-medium">{mapDisplay(m.map_name)}</td>
             <td class="py-2.5 px-3">
@@ -108,9 +115,9 @@
             </td>
             <td class="py-2.5 px-3">
               {#if m.result === 'win'}
-                <span class="px-2 py-0.5 rounded text-xs font-bold bg-green-500/20 text-green-400">W</span>
+                <span class="px-2 py-0.5 rounded text-xs font-bold bg-green-900 text-green-400">W</span>
               {:else if m.result === 'loss'}
-                <span class="px-2 py-0.5 rounded text-xs font-bold bg-red-500/20 text-red-400">L</span>
+                <span class="px-2 py-0.5 rounded text-xs font-bold bg-red-900 text-red-400">L</span>
               {:else}
                 <span class="text-zinc-500">-</span>
               {/if}
@@ -125,7 +132,7 @@
   </div>
 
   {#if selectedId}
-    <div class="mt-6 pt-4 border-t border-white/10">
+    <div class="mt-6 pt-4 border-t border-white border-opacity-10">
       <h4 class="text-sm font-semibold text-zinc-400 mb-3 uppercase tracking-wider">Round Breakdown</h4>
       {#if roundsLoading}
         <p class="text-zinc-500 text-sm">Loading rounds...</p>
@@ -135,7 +142,7 @@
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="text-xs uppercase tracking-wider text-zinc-500 border-b border-white/10">
+              <tr class="text-xs uppercase tracking-wider text-zinc-500 border-b border-white border-opacity-10">
                 <th class="text-left py-2 px-2">#</th>
                 <th class="text-left py-2 px-2">Side</th>
                 <th class="text-left py-2 px-2">K</th>
@@ -146,19 +153,15 @@
             </thead>
             <tbody>
               {#each rounds as r (r.id)}
-                <tr class="border-b border-white/5">
+                <tr class="border-b border-white border-opacity-5">
                   <td class="py-1.5 px-2 text-zinc-500">{r.round_number}</td>
                   <td class="py-1.5 px-2">
                     <span class={r.winning_team === 'CT' ? 'text-blue-400' : 'text-amber-400'}>
                       {r.winning_team ?? '-'}
                     </span>
                   </td>
-                  <td class={clsx('py-1.5 px-2', (r.kills ?? 0) > 0 && 'text-green-400 font-semibold')}>
-                    {r.kills ?? 0}
-                  </td>
-                  <td class={clsx('py-1.5 px-2', (r.deaths ?? 0) > 0 && 'text-red-400')}>
-                    {r.deaths ?? 0}
-                  </td>
+                  <td class={killClass(r.kills)}>{r.kills ?? 0}</td>
+                  <td class={deathClass(r.deaths)}>{r.deaths ?? 0}</td>
                   <td class="py-1.5 px-2 text-zinc-300">{r.weapon_used ?? '-'}</td>
                   <td class="py-1.5 px-2 text-xs text-zinc-500">
                     {#each r.weapon_stats as ws}
