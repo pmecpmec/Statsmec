@@ -10,9 +10,47 @@ from app.db.session import get_db
 from app.models.match import Match, MatchPlayer, Round, WeaponStat
 from app.services.auto_sync import _resolve_player_id, _sync_once
 from app.services.allstar_client import fetch_user_clips, normalize_clips
+from app.services.external_clients import (
+    fetch_csgo_classic_stats,
+    fetch_faceit_player_by_nickname,
+    fetch_premier_and_faceit_from_remote,
+    fetch_steam_profile,
+)
 
 
 router = APIRouter()
+
+
+# FACEIT level 1–10 to hex (grey → green → yellow → orange → red → gold)
+FACEIT_LEVEL_COLORS: dict[int, str] = {
+    1: "#8b8b8b",
+    2: "#5a9b5a",
+    3: "#5a9b5a",
+    4: "#7cb35c",
+    5: "#a0c95a",
+    6: "#c5e359",
+    7: "#f0e14e",
+    8: "#f5a623",
+    9: "#e86122",
+    10: "#e64646",
+}
+
+
+def _premier_rating_to_hex(rating: int) -> str:
+    """CS2 Premier rating to tier color (Gray <5k → Light Blue → Blue → Purple → Pink → Red → Yellow 30k+)."""
+    if rating < 5000:
+        return "#9ca3af"
+    if rating < 10000:
+        return "#7dd3fc"
+    if rating < 15000:
+        return "#60a5fa"
+    if rating < 20000:
+        return "#a78bfa"
+    if rating < 25000:
+        return "#f472b6"
+    if rating < 30000:
+        return "#f87171"
+    return "#facc15"
 
 
 class ProfileOverview(BaseModel):
@@ -32,6 +70,10 @@ class ProfileOverview(BaseModel):
     favorite_map: str | None
     favorite_weapon: str | None
     api_configured: bool
+    faceit_level: int | None = None
+    faceit_color_hex: str | None = None
+    premier_rating: int | None = None
+    premier_color_hex: str | None = None
 
 
 @router.get("/", response_model=ProfileOverview)
@@ -87,13 +129,69 @@ async def get_profile(db: AsyncSession = Depends(get_db)) -> ProfileOverview:
     fav_weapon_row = fav_weapon_q.one_or_none()
     favorite_weapon = fav_weapon_row[0] if fav_weapon_row else None
 
+    # Default to the known avatar URL, but try to refresh from Steam if an API key is configured.
+    avatar_url = "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
+    try:
+        steam_profile = await fetch_steam_profile(PMEC_STEAM_ID)
+        if steam_profile and steam_profile.get("avatarfull"):
+            avatar_url = str(steam_profile["avatarfull"])
+    except Exception:
+        pass
+
+    # FACEIT level and color from API
+    faceit_level: int | None = None
+    faceit_color_hex: str | None = None
+    elo = 2616
+    has_faceit_elo = False
+    try:
+        faceit_player = await fetch_faceit_player_by_nickname(PMEC_FACEIT_NICKNAME)
+        if faceit_player:
+            games = faceit_player.get("games") or {}
+            cs2 = games.get("cs2") or {}
+            if isinstance(cs2, dict):
+                lvl = cs2.get("skill_level")
+                if lvl is not None:
+                    faceit_level = int(lvl) if int(lvl) in range(1, 11) else None
+                    if faceit_level is not None:
+                        faceit_color_hex = FACEIT_LEVEL_COLORS.get(faceit_level)
+                raw_elo = cs2.get("faceit_elo")
+                if raw_elo is not None:
+                    elo = int(raw_elo)
+                    has_faceit_elo = True
+    except Exception:
+        pass
+
+    # Optional third‑party hook (e.g. api.jakobkristensen.com) for Premier + Faceit elo
+    remote_premier_rating: int | None = None
+    remote_faceit_elo: int | None = None
+    if settings.PMEC_PREMIER_REMOTE_URL:
+        try:
+            remote = await fetch_premier_and_faceit_from_remote(settings.PMEC_PREMIER_REMOTE_URL)
+            if remote:
+                remote_premier_rating = remote.get("premier_rating")
+                remote_faceit_elo = remote.get("faceit_elo")
+        except Exception:
+            # Completely optional; ignore failures and fall back to other sources.
+            remote_premier_rating = None
+            remote_faceit_elo = None
+
+    # If FACEIT API isn't configured or didn't give us an elo, fall back to remote Faceit elo
+    if remote_faceit_elo is not None and not has_faceit_elo:
+        elo = remote_faceit_elo
+
+    # Premier from remote first, then config (no public API)
+    premier_rating = remote_premier_rating if remote_premier_rating is not None else settings.PMEC_PREMIER_RATING
+    premier_color_hex = settings.PMEC_PREMIER_COLOR
+    if premier_rating is not None and premier_color_hex is None:
+        premier_color_hex = _premier_rating_to_hex(premier_rating)
+
     return ProfileOverview(
         nickname="pmec",
         steam_id=PMEC_STEAM_ID,
         faceit_nickname=PMEC_FACEIT_NICKNAME,
-        avatar_url="https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg",
+        avatar_url=avatar_url,
         rank="Global Sentinel",
-        elo=2616,
+        elo=elo,
         total_matches=total_matches,
         total_wins=total_wins,
         total_losses=total_losses,
@@ -104,6 +202,10 @@ async def get_profile(db: AsyncSession = Depends(get_db)) -> ProfileOverview:
         favorite_map=favorite_map,
         favorite_weapon=favorite_weapon,
         api_configured=bool(settings.FACEIT_API_KEY),
+        faceit_level=faceit_level,
+        faceit_color_hex=faceit_color_hex,
+        premier_rating=premier_rating,
+        premier_color_hex=premier_color_hex,
     )
 
 
@@ -250,4 +352,41 @@ async def get_highlights(limit: int = 12) -> HighlightsResponse:
     return HighlightsResponse(
         total=total,
         clips=[HighlightClip(**c) for c in normalized],
+    )
+
+
+class CSGOClassicStats(BaseModel):
+    total_kills: int
+    total_deaths: int
+    kd: float
+    total_wins: int
+    total_time_hours: float
+
+
+@router.get("/csgo-classic", response_model=CSGOClassicStats)
+async def get_csgo_classic_stats() -> CSGOClassicStats:
+    """
+    Lifetime CS:GO / CS2 classic stats from Steam Web API.
+    Uses appid 730 and the configured STEAM_API_KEY.
+    """
+    payload = await fetch_csgo_classic_stats(PMEC_STEAM_ID)
+    stats_list = ((payload or {}).get("playerstats") or {}).get("stats") or []
+    stats = {str(s.get("name")): int(s.get("value") or 0) for s in stats_list if "name" in s}
+
+    total_kills = int(stats.get("total_kills", 0))
+    total_deaths = int(stats.get("total_deaths", 0))
+    total_wins = int(stats.get("total_wins", 0))
+    # Some schemas use total_time_played, others may have variants; fall back gracefully.
+    time_seconds = int(
+        stats.get("total_time_played", 0)
+    )
+    total_time_hours = time_seconds / 3600 if time_seconds > 0 else 0.0
+    kd = total_kills / max(1, total_deaths)
+
+    return CSGOClassicStats(
+        total_kills=total_kills,
+        total_deaths=total_deaths,
+        kd=round(kd, 2),
+        total_wins=total_wins,
+        total_time_hours=round(total_time_hours, 1),
     )

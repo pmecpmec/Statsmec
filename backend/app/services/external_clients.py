@@ -73,6 +73,26 @@ async def fetch_steam_match_history(steam_id: str, limit: int = 20) -> Dict[str,
     return resp.json()
 
 
+async def fetch_steam_profile(steam_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Lightweight wrapper around GetPlayerSummaries to obtain the current avatar.
+    Returns the first player object or None.
+    """
+    if not settings.STEAM_API_KEY:
+        return None
+    params = {
+        "key": settings.STEAM_API_KEY,
+        "steamids": steam_id,
+    }
+    resp = await steam_client.get("/ISteamUser/GetPlayerSummaries/v2/", params=params)
+    resp.raise_for_status()
+    data = resp.json() or {}
+    players = (data.get("response") or {}).get("players") or []
+    if not players:
+        return None
+    return players[0]
+
+
 async def fetch_faceit_player_by_nickname(nickname: str) -> Optional[Dict[str, Any]]:
     """Resolve a FACEIT nickname to full player object (includes player_id, elo, etc)."""
     if not settings.FACEIT_API_KEY:
@@ -132,4 +152,81 @@ async def fetch_faceit_rank_averages(game: str = "cs2") -> Optional[Dict[str, An
         return None
     resp.raise_for_status()
     return resp.json()
+
+
+async def fetch_csgo_classic_stats(steam_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Fetch lifetime CS:GO/CS2 stats from Steam Web API.
+    This uses appid 730 and returns the raw playerstats payload.
+    """
+    if not settings.STEAM_API_KEY:
+        return None
+
+    params = {
+        "key": settings.STEAM_API_KEY,
+        "steamid": steam_id,
+        "appid": 730,
+    }
+    resp = await steam_client.get("/ISteamUserStats/GetUserStatsForGame/v2/", params=params)
+    resp.raise_for_status()
+    return resp.json()
+
+
+async def fetch_premier_and_faceit_from_remote(url: str) -> Optional[Dict[str, int]]:
+    """
+    Best‑effort helper for third‑party elo endpoints (e.g. api.jakobkristensen.com).
+    Expects the first line of the response to look like:
+
+        "<premier_rating>|<faceit_elo>"
+
+    and returns any values it can parse.
+    """
+    async with httpx.AsyncClient(timeout=8.0) as client:
+        resp = await client.get(url)
+        resp.raise_for_status()
+        text = (resp.text or "").strip()
+
+    if not text:
+        return None
+
+    first_line = text.splitlines()[0]
+    result: Dict[str, int] = {}
+
+    # Preferred format: "<premier_rating>|<faceit_elo>"
+    parts = [p.strip() for p in first_line.split("|")]
+    if len(parts) >= 2:
+        left, right = parts[0], parts[1]
+        left_digits = "".join(ch for ch in left if ch.isdigit())
+        right_digits = "".join(ch for ch in right if ch.isdigit())
+        if left_digits:
+            try:
+                result["premier_rating"] = int(left_digits)
+            except ValueError:
+                pass
+        if right_digits:
+            try:
+                result["faceit_elo"] = int(right_digits)
+            except ValueError:
+                pass
+
+    # Fallback: two numbers separated by whitespace, e.g. "{{elo}} {{rating}}"
+    if not result:
+        tokens = first_line.split()
+        nums: list[int] = []
+        for token in tokens:
+            digits = "".join(ch for ch in token if ch.isdigit())
+            if digits:
+                try:
+                    nums.append(int(digits))
+                except ValueError:
+                    continue
+        if len(nums) >= 2:
+            a, b = nums[0], nums[1]
+            # Heuristic: Premier rating is typically much higher than Faceit ELO.
+            premier = max(a, b)
+            elo = min(a, b)
+            result["premier_rating"] = premier
+            result["faceit_elo"] = elo
+
+    return result or None
 

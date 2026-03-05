@@ -3,7 +3,7 @@
 
   let { apiUrl = 'http://127.0.0.1:8000/api/v1' } = $props();
 
-  type TrendPoint = { date: string; win_rate: number; matches: number };
+  type TrendPoint = { date: string; wins: number; losses: number; matches: number };
   let data: TrendPoint[] = $state([]);
   let error = $state('');
   let canvas: HTMLCanvasElement | undefined = $state(undefined);
@@ -12,7 +12,8 @@
     try {
       const res = await fetch(`${apiUrl}/analytics/users/1`);
       const json = await res.json();
-      data = json.win_rate_trend ?? [];
+      // Backend returns win_rate_trend points with date, wins, losses, matches.
+      data = (json.win_rate_trend ?? []) as TrendPoint[];
       if (data.length && canvas) drawChart();
     } catch {
       error = 'Could not load trends.';
@@ -31,7 +32,9 @@
         datasets: [
           {
             label: 'Win Rate',
-            data: data.map((d) => Math.round(d.win_rate * 100)),
+            data: data.map((d) =>
+              d.matches ? Math.round((d.wins / d.matches) * 100) : 0
+            ),
             borderColor: '#7c3aed',
             backgroundColor: 'rgba(124,58,237,0.1)',
             fill: true,

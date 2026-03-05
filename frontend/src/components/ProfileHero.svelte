@@ -21,6 +21,10 @@
     favorite_map: string | null;
     favorite_weapon: string | null;
     api_configured: boolean;
+    faceit_level?: number | null;
+    faceit_color_hex?: string | null;
+    premier_rating?: number | null;
+    premier_color_hex?: string | null;
   };
 
   let profile: Profile | null = $state(null);
@@ -41,14 +45,34 @@
   <div class="max-w-6xl mx-auto px-5 w-full">
     <div class="flex flex-col lg:flex-row items-center gap-12">
       <div class="relative reveal">
-        <img
-          src="https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
-          alt="pmec"
-          class="w-44 h-44 md:w-52 md:h-52 rounded-full border-4 border-primary-500 object-cover animate-glow"
-        />
-        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-primary-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-          LVL 10
+        <!-- Double border: outer = Premier, inner = FACEIT -->
+        <div
+          class="w-44 h-44 md:w-52 md:h-52 rounded-full p-1 shrink-0"
+          style="background: {profile?.premier_color_hex ?? 'var(--color-primary-500)'};"
+        >
+          <div
+            class="w-full h-full rounded-full p-1.5"
+            style="background: {profile?.faceit_color_hex ?? 'var(--color-primary-500)'};"
+          >
+            <img
+              src={profile?.avatar_url ?? 'https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg'}
+              alt="pmec"
+              class="w-full h-full rounded-full object-cover animate-glow"
+            />
+          </div>
         </div>
+        {#if profile?.faceit_level != null}
+          <div
+            class="absolute -bottom-2 left-1/2 -translate-x-1/2 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg border border-white/20"
+            style="background-color: {profile.faceit_color_hex ?? 'var(--color-primary-600)'};"
+          >
+            LVL {profile.faceit_level}
+          </div>
+        {:else}
+          <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-primary-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+            LVL 10
+          </div>
+        {/if}
       </div>
 
       <div class="text-center lg:text-left reveal stagger-1">
@@ -65,12 +89,30 @@
         {/if}
 
         <div class="flex flex-wrap gap-3 justify-center lg:justify-start">
-          <span class="px-4 py-1.5 rounded-full text-sm font-semibold border border-amber-500 border-opacity-30 text-amber-400" style="background: rgba(245,158,11,0.1);">
-            {profile?.rank ?? 'Global Sentinel'}
-          </span>
-          <span class="px-4 py-1.5 rounded-full text-sm font-semibold border border-primary-500 border-opacity-30 text-primary-400" style="background: rgba(124,58,237,0.1);">
-            ELO {profile?.elo ?? 2616}
-          </span>
+          {#if profile?.premier_rating != null && profile?.premier_color_hex}
+            <span
+              class="px-4 py-1.5 rounded-full text-sm font-semibold border border-white/20 text-white"
+              style="background-color: {profile.premier_color_hex};"
+            >
+              Premier {profile.premier_rating.toLocaleString()}
+            </span>
+          {:else}
+            <span class="px-4 py-1.5 rounded-full text-sm font-semibold border border-amber-500 border-opacity-30 text-amber-400" style="background: rgba(245,158,11,0.1);">
+              {profile?.rank ?? 'Global Sentinel'}
+            </span>
+          {/if}
+          {#if profile?.faceit_color_hex}
+            <span
+              class="px-4 py-1.5 rounded-full text-sm font-semibold border border-white/20 text-white"
+              style="background-color: {profile.faceit_color_hex};"
+            >
+              ELO {profile?.elo ?? 2616}
+            </span>
+          {:else}
+            <span class="px-4 py-1.5 rounded-full text-sm font-semibold border border-primary-500 border-opacity-30 text-primary-400" style="background: rgba(124,58,237,0.1);">
+              ELO {profile?.elo ?? 2616}
+            </span>
+          {/if}
           <span class="px-4 py-1.5 rounded-full text-sm font-semibold border border-white border-opacity-10 text-zinc-300" style="background: rgba(255,255,255,0.03);">
             {fmt(profile?.total_hours ?? 9620)}h played
           </span>
@@ -83,25 +125,25 @@
       <div class="flex-1 w-full lg:w-auto reveal stagger-2">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div class="stat-card">
-            <span class="text-2xl md:text-3xl font-extrabold text-cs-green">
+            <span class="text-xl md:text-2xl font-extrabold text-cs-green">
               {profile ? profile.win_rate.toFixed(1) : '--'}%
             </span>
             <span class="text-xs uppercase tracking-wider text-zinc-500">Win Rate</span>
           </div>
           <div class="stat-card">
-            <span class="text-2xl md:text-3xl font-extrabold">
+            <span class="text-xl md:text-2xl font-extrabold">
               {profile ? profile.overall_kd.toFixed(2) : '--'}
             </span>
             <span class="text-xs uppercase tracking-wider text-zinc-500">K/D</span>
           </div>
           <div class="stat-card">
-            <span class="text-2xl md:text-3xl font-extrabold text-amber-400">
+            <span class="text-xl md:text-2xl font-extrabold text-amber-400">
               {profile ? profile.headshot_pct.toFixed(1) : '--'}%
             </span>
             <span class="text-xs uppercase tracking-wider text-zinc-500">HS %</span>
           </div>
           <div class="stat-card">
-            <span class="text-2xl md:text-3xl font-extrabold">
+            <span class="text-xl md:text-2xl font-extrabold">
               {fmt(profile?.total_wins ?? 0)}
             </span>
             <span class="text-xs uppercase tracking-wider text-zinc-500">Wins</span>

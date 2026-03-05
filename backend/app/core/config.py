@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     ALLSTAR_SERVER_API_KEY: str | None = None
     ALLSTAR_PUBLIC_API_KEY: str | None = None
 
+    # CS2 Premier (no public API; optional override)
+    PMEC_PREMIER_RATING: int | None = None  # e.g. 18500
+    PMEC_PREMIER_COLOR: str | None = None   # optional hex; if unset, derived from rating
+    # Optional third-party text endpoint for Premier + Faceit elo
+    # e.g. https://api.jakobkristensen.com with output "{{rating}}|{{elo}}"
+    PMEC_PREMIER_REMOTE_URL: str | None = None
+
     BACKEND_CORS_ORIGINS: List[str] = Field(default=["*"])
 
     class Config:
