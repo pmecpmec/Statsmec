@@ -8,7 +8,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.match import Match, MatchPlayer, Round, WeaponStat
@@ -83,10 +83,31 @@ def _determine_result(details: Dict[str, Any], pmec_faction: Optional[str]) -> t
 
 def _extract_map(details: Dict[str, Any]) -> Optional[str]:
     voting = details.get("voting") or {}
-    if isinstance(voting.get("map"), dict):
-        return voting["map"].get("pick") or voting["map"].get("map")
-    if isinstance(voting.get("map"), str):
-        return voting["map"]
+    map_val = voting.get("map")
+
+    if isinstance(map_val, dict):
+        pick = map_val.get("pick")
+        if isinstance(pick, list):
+            return pick[0] if pick else None
+        return pick or map_val.get("map")
+    if isinstance(map_val, list):
+        return map_val[0] if map_val else None
+    if isinstance(map_val, str):
+        return map_val
+
+    # Fallback: check match configuredMap or maps in voting
+    configured = details.get("configured_at") or details.get("configuredMap")
+    if isinstance(configured, str):
+        return configured
+
+    maps = voting.get("maps")
+    if isinstance(maps, dict):
+        pick = maps.get("pick")
+        if isinstance(pick, list):
+            return pick[0] if pick else None
+        if isinstance(pick, str):
+            return pick
+
     return None
 
 
@@ -216,10 +237,13 @@ async def upsert_faceit_matches(
             match.score_team = score_team
             match.score_opponent = score_opponent
             match.result = result
-            for r in list(match.rounds):
-                await db.delete(r)
-            for p in list(match.players):
-                await db.delete(p)
+            # Delete old round data (cascade handles WeaponStat via FK)
+            round_ids_q = await db.execute(select(Round.id).where(Round.match_id == match.id))
+            round_ids = [r[0] for r in round_ids_q.all()]
+            if round_ids:
+                await db.execute(delete(WeaponStat).where(WeaponStat.round_id.in_(round_ids)))
+                await db.execute(delete(Round).where(Round.match_id == match.id))
+            await db.execute(delete(MatchPlayer).where(MatchPlayer.match_id == match.id))
             await db.flush()
 
         # Fetch match stats (all players, all rounds)

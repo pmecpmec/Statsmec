@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import PMEC_FACEIT_NICKNAME, PMEC_STEAM_ID, settings
 from app.db.session import get_db
-from app.models.match import Match, Round, WeaponStat
+from app.models.match import Match, MatchPlayer, Round, WeaponStat
 from app.services.auto_sync import _resolve_player_id, _sync_once
 
 
@@ -185,3 +185,33 @@ async def trigger_sync() -> SyncResult:
         return SyncResult(success=True, message="Sync complete", api_configured=True)
     except Exception as e:
         return SyncResult(success=False, message=str(e), api_configured=True)
+
+
+@router.delete("/seed-data")
+async def delete_seed_data(db: AsyncSession = Depends(get_db)) -> dict:
+    """Remove seeded/demo matches (those without real FACEIT UUID external IDs)."""
+    from sqlalchemy import and_, delete, not_, select
+
+    seed_matches = await db.execute(
+        select(Match.id).where(
+            and_(
+                Match.user_id == 1,
+                not_(Match.external_match_id.like("1-________-____-____-____-____________%")),
+            )
+        )
+    )
+    seed_ids = [r[0] for r in seed_matches.all()]
+    if not seed_ids:
+        return {"deleted": 0}
+
+    seed_round_ids = await db.execute(
+        select(Round.id).where(Round.match_id.in_(seed_ids))
+    )
+    rids = [r[0] for r in seed_round_ids.all()]
+    if rids:
+        await db.execute(delete(WeaponStat).where(WeaponStat.round_id.in_(rids)))
+    await db.execute(delete(Round).where(Round.match_id.in_(seed_ids)))
+    await db.execute(delete(MatchPlayer).where(MatchPlayer.match_id.in_(seed_ids)))
+    await db.execute(delete(Match).where(Match.id.in_(seed_ids)))
+    await db.commit()
+    return {"deleted": len(seed_ids)}

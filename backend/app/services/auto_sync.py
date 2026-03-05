@@ -21,6 +21,7 @@ log = logging.getLogger(__name__)
 SYNC_INTERVAL = 60
 _task: asyncio.Task | None = None
 _faceit_player_id: str | None = None
+_sync_lock = asyncio.Lock()
 
 
 async def _resolve_player_id() -> str | None:
@@ -40,6 +41,11 @@ async def _resolve_player_id() -> str | None:
 
 
 async def _sync_once() -> None:
+    async with _sync_lock:
+        await _sync_inner()
+
+
+async def _sync_inner() -> None:
     player_id = await _resolve_player_id()
     if not player_id:
         return
@@ -51,8 +57,12 @@ async def _sync_once() -> None:
         return
 
     async with AsyncSessionLocal() as db:
-        from sqlalchemy import select
-        user_q = await db.execute(select(User).where(User.faceit_id == player_id))
+        from sqlalchemy import or_, select
+        user_q = await db.execute(
+            select(User).where(
+                or_(User.faceit_id == player_id, User.steam_id == "76561198245080640")
+            )
+        )
         user = user_q.scalar_one_or_none()
 
         if not user:
@@ -64,6 +74,9 @@ async def _sync_once() -> None:
                 avatar_url="https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg",
             )
             db.add(user)
+            await db.flush()
+        elif not user.faceit_id:
+            user.faceit_id = player_id
             await db.flush()
 
         try:
