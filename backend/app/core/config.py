@@ -26,6 +26,14 @@ class Settings(BaseSettings):
     STEAM_API_KEY: str | None = None
     FACEIT_API_KEY: str | None = None
 
+    # MongoDB (optional cache)
+    MONGODB_URI: str | None = None
+    MONGODB_DB_NAME: str = "statsmec"
+
+    # Allstar.gg Partner API
+    ALLSTAR_SERVER_API_KEY: str | None = None
+    ALLSTAR_PUBLIC_API_KEY: str | None = None
+
     BACKEND_CORS_ORIGINS: List[str] = Field(default=["*"])
 
     class Config:

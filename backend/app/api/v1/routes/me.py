@@ -9,6 +9,7 @@ from app.core.config import PMEC_FACEIT_NICKNAME, PMEC_STEAM_ID, settings
 from app.db.session import get_db
 from app.models.match import Match, MatchPlayer, Round, WeaponStat
 from app.services.auto_sync import _resolve_player_id, _sync_once
+from app.services.allstar_client import fetch_user_clips, normalize_clips
 
 
 router = APIRouter()
@@ -215,3 +216,38 @@ async def delete_seed_data(db: AsyncSession = Depends(get_db)) -> dict:
     await db.execute(delete(Match).where(Match.id.in_(seed_ids)))
     await db.commit()
     return {"deleted": len(seed_ids)}
+
+
+class HighlightClip(BaseModel):
+    clip_id: str | None
+    title: str
+    url: str | None
+    thumbnail: str | None
+    created_at: str | None
+    status: str | None
+    steam_id: str | None
+    map: str | None = None
+    kills: int | None = None
+    headshots: int | None = None
+    weapon: str | None = None
+
+
+class HighlightsResponse(BaseModel):
+    total: int
+    clips: list[HighlightClip]
+
+
+@router.get("/highlights", response_model=HighlightsResponse)
+async def get_highlights(limit: int = 12) -> HighlightsResponse:
+    """
+    Return recent Allstar.gg clips for pmec (CS2 only).
+    """
+    payload = await fetch_user_clips(steam_id=PMEC_STEAM_ID, limit=limit)
+    normalized = normalize_clips(payload)
+    total = (payload.get("data") or {}).get("count") or len(normalized)
+    # Trim in case API returns more than requested.
+    normalized = normalized[:limit]
+    return HighlightsResponse(
+        total=total,
+        clips=[HighlightClip(**c) for c in normalized],
+    )

@@ -1,6 +1,6 @@
 """
 Ingest FACEIT Data API responses into our Match / Round / WeaponStat / MatchPlayer models.
-Pulls ALL 10 players per match for full scoreboard data.
+Pulls ALL 10 players per match for full scoreboard data and mirrors a compact view into MongoDB.
 """
 from __future__ import annotations
 
@@ -11,11 +11,13 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.models.match import Match, MatchPlayer, Round, WeaponStat
 from app.services.external_clients import (
     fetch_faceit_match_details,
     fetch_faceit_match_stats,
 )
+from app.services.mongo_stats import upsert_match_summary
 
 log = logging.getLogger(__name__)
 
@@ -262,6 +264,8 @@ async def upsert_faceit_matches(
                     pmec_team_id = p["team_id"]
                     break
 
+            mongo_players: List[Dict[str, Any]] = []
+
             for p in all_players:
                 if pmec_team_id:
                     team_label = "CT" if p["team_id"] == pmec_team_id else "T"
@@ -287,6 +291,28 @@ async def upsert_faceit_matches(
                     headshot_pct=round(hs_pct, 1),
                     rating=rating,
                 ))
+
+                mongo_players.append(
+                    {
+                        "player_name": p["nickname"],
+                        "team": team_label,
+                        "is_self": p["is_self"],
+                        "kills": kills,
+                        "deaths": p["deaths"],
+                        "assists": p["assists"],
+                        "adr": p["adr"],
+                        "headshot_pct": round(hs_pct, 1),
+                        "rating": rating,
+                    }
+                )
+
+            # Mirror into MongoDB as a compact cache, keeping only a rolling
+            # window of recent matches so we stay within the free-tier limit.
+            if settings.MONGODB_URI and mongo_players:
+                try:
+                    await upsert_match_summary(user_id=user_id, match=match, players=mongo_players)
+                except Exception as e:
+                    log.warning("Failed to upsert Mongo summary for %s: %s", external_id, e)
 
             # Extract round-by-round data for pmec
             rounds_data = stats_payload.get("rounds") or []
