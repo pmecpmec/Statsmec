@@ -36,6 +36,8 @@ jobs:
         run: npm ci
 
       - name: Build
+        env:
+          PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL }}
         run: |
           npm run build
           cp CNAME dist/CNAME || true
