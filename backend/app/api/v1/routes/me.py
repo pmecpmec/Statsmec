@@ -8,17 +8,26 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import PMEC_FACEIT_NICKNAME, PMEC_STEAM_ID, settings
 from app.db.session import get_db
 from app.models.match import Match, MatchPlayer, Round, WeaponStat
-from app.services.auto_sync import _sync_once
+from app.services.auto_sync import _resolve_player_id, _sync_once
 from app.services.allstar_client import fetch_user_clips, normalize_clips
+from app.services.cache import cached
 from app.services.external_clients import (
     fetch_csgo_classic_stats,
+    fetch_faceit_bans,
+    fetch_faceit_lifetime_stats,
     fetch_faceit_player_by_nickname,
     fetch_premier_and_faceit_from_remote,
     fetch_riot_account_by_riot_id,
     fetch_steam_profile,
     fetch_valorant_matchlist,
 )
+from app.services.faceit_lifetime import parse_faceit_lifetime
+from app.services.scrape_clients import scrape_csstats, scrape_esea
 from app.services.valorant_stats import build_player_valorant_stats
+from app.schemas.external import ExternalStatsResponse, ScrapeSource
+from app.schemas.faceit import FaceitLifetimeStats
+
+ESEA_USER_ID = "1693449"
 
 
 router = APIRouter()
@@ -618,4 +627,89 @@ async def get_csgo_classic_stats() -> CSGOClassicStats:
         kd=round(kd, 2),
         total_wins=total_wins,
         total_time_hours=round(total_time_hours, 1),
+    )
+
+
+@router.get("/faceit-lifetime", response_model=FaceitLifetimeStats)
+async def get_faceit_lifetime() -> FaceitLifetimeStats:
+    """
+    pmec's lifetime FACEIT stats (official Data API): win rate, K/D, HS%, win
+    streaks, recent W/L results, per-map breakdown and any bans. Cached ~300s.
+    Degrades to an honest empty state when the key/data is unavailable.
+    """
+    if not settings.FACEIT_API_KEY:
+        return FaceitLifetimeStats(
+            available=False,
+            api_configured=False,
+            error=(
+                "FACEIT_API_KEY not configured"
+                if settings.dev_hints_in_api
+                else "FACEIT data is not available right now."
+            ),
+        )
+
+    async def _compute() -> dict:
+        player_id = await _resolve_player_id()
+        if not player_id:
+            return {"available": False, "error": "Could not resolve FACEIT player."}
+        stats_payload = await fetch_faceit_lifetime_stats(player_id, game="cs2")
+        bans_payload = await fetch_faceit_bans(player_id)
+        parsed = parse_faceit_lifetime(stats_payload, bans_payload)
+        if not parsed.get("available") and stats_payload is None:
+            parsed["error"] = "FACEIT did not return lifetime stats."
+        return parsed
+
+    try:
+        data = await cached("me:faceit-lifetime:cs2", 300, _compute)
+    except Exception:
+        return FaceitLifetimeStats(
+            available=False,
+            api_configured=True,
+            error="FACEIT data is not available right now.",
+        )
+
+    return FaceitLifetimeStats(api_configured=True, **data)
+
+
+@router.get("/external-stats", response_model=ExternalStatsResponse)
+async def get_external_stats() -> ExternalStatsResponse:
+    """
+    Best-effort scraped stats from csstats.gg and ESEA. Both sites are behind
+    Cloudflare, so each source carries an honest `available` flag — the UI shows
+    the data when present, or a "couldn't fetch (blocked)" note otherwise.
+    Long-cached (1h) and fully defensive: this never blocks or breaks /me/.
+    """
+
+    async def _compute_csstats() -> dict:
+        try:
+            return await scrape_csstats(PMEC_STEAM_ID)
+        except Exception:
+            return {
+                "available": False,
+                "source": "csstats.gg",
+                "url": f"https://csstats.gg/player/{PMEC_STEAM_ID}",
+                "method": None,
+                "status": "error",
+                "stats": {},
+            }
+
+    async def _compute_esea() -> dict:
+        try:
+            return await scrape_esea(ESEA_USER_ID)
+        except Exception:
+            return {
+                "available": False,
+                "source": "ESEA",
+                "url": f"https://play.esea.net/users/{ESEA_USER_ID}",
+                "method": None,
+                "status": "error",
+                "stats": {},
+            }
+
+    csstats_data = await cached("me:external:csstats", 3600, _compute_csstats)
+    esea_data = await cached("me:external:esea", 3600, _compute_esea)
+
+    return ExternalStatsResponse(
+        csstats=ScrapeSource(**csstats_data),
+        esea=ScrapeSource(**esea_data),
     )

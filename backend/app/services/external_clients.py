@@ -148,6 +148,47 @@ async def fetch_faceit_match_stats(match_id: str) -> Optional[Dict[str, Any]]:
     return resp.json()
 
 
+async def fetch_faceit_lifetime_stats(
+    player_id: str, game: str = "cs2"
+) -> Optional[Dict[str, Any]]:
+    """
+    Lifetime + per-segment (per-map) stats for a player.
+    GET /players/{player_id}/stats/{game} → {lifetime: {...}, segments: [...]}.
+    Returns None on missing key, 404, or HTTP error (never raises into request path).
+    """
+    if not settings.FACEIT_API_KEY:
+        return None
+    headers = {"Authorization": f"Bearer {settings.FACEIT_API_KEY}"}
+    try:
+        resp = await faceit_client.get(
+            f"/players/{player_id}/stats/{game}", headers=headers
+        )
+        if resp.status_code == 404:
+            return None
+        resp.raise_for_status()
+        return resp.json()
+    except Exception:
+        return None
+
+
+async def fetch_faceit_bans(player_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Player ban history. GET /players/{player_id}/bans → {items: [...]}.
+    Returns None on missing key or any HTTP error.
+    """
+    if not settings.FACEIT_API_KEY:
+        return None
+    headers = {"Authorization": f"Bearer {settings.FACEIT_API_KEY}"}
+    try:
+        resp = await faceit_client.get(f"/players/{player_id}/bans", headers=headers)
+        if resp.status_code == 404:
+            return None
+        resp.raise_for_status()
+        return resp.json()
+    except Exception:
+        return None
+
+
 async def fetch_faceit_rank_averages(game: str = "cs2") -> Optional[Dict[str, Any]]:
     if not settings.FACEIT_API_KEY:
         return None

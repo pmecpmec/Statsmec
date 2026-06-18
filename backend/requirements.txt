@@ -12,3 +12,4 @@ black>=24.0.0
 flake8>=7.0.0
 motor>=3.5.0
 aiosqlite>=0.20.0
+cloudscraper>=1.2.71

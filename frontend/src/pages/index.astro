@@ -8,6 +8,8 @@ import PerformanceChart from '../components/PerformanceChart.svelte';
 import WeaponBreakdown from '../components/WeaponBreakdown.svelte';
 import Highlights from '../components/Highlights.svelte';
 import ClassicStats from '../components/ClassicStats.svelte';
+import FaceitLifetime from '../components/FaceitLifetime.svelte';
+import ExternalStats from '../components/ExternalStats.svelte';
 
 const API = import.meta.env.PUBLIC_API_URL ?? 'http://127.0.0.1:8000/api/v1';
 ---
@@ -63,6 +65,25 @@ const API = import.meta.env.PUBLIC_API_URL ?? 'http://127.0.0.1:8000/api/v1';
         </div>
         <div class="glass-card reveal stagger-1 mx-auto max-w-xl">
           <ClassicStats client:load apiUrl={API} />
+        </div>
+      </div>
+    </section>
+
+    <section id="faceit" class="border-t border-game bg-game-secondary/40 px-4 py-16 md:px-8">
+      <div class="mx-auto max-w-6xl px-1">
+        <div class="reveal mb-8 flex flex-col items-center md:mb-10">
+          <span class="section-kicker mb-2">Ranked ladder</span>
+          <h2 class="section-title-accent text-center font-display text-3xl font-bold uppercase tracking-tight text-game-primary md:text-4xl">
+            FACEIT &amp; external
+          </h2>
+        </div>
+        <div class="grid gap-6 lg:grid-cols-2">
+          <div class="glass-card hud-rail hud-rail-ct reveal stagger-1 pl-7">
+            <FaceitLifetime client:load apiUrl={API} />
+          </div>
+          <div class="glass-card hud-rail hud-rail-t reveal stagger-2 pl-7">
+            <ExternalStats client:load apiUrl={API} />
+          </div>
         </div>
       </div>
     </section>
