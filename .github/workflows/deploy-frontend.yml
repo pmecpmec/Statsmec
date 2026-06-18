@@ -40,11 +40,11 @@ jobs:
       - name: Build
         env:
           PUBLIC_DEV_UI: 'false'
-          # Set the production backend base URL via a repo/Actions variable.
+          # Set the production backend base URL via the `API` repo/Actions variable.
           # Configure it under Settings → Secrets and variables → Actions → Variables.
           # Must include the /api/v1 suffix (e.g. https://api.pmec.dev/api/v1).
           # Falls back to the default in code if the variable is unset.
-          PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL }}
+          PUBLIC_API_URL: ${{ vars.API }}
         run: |
           npm run build
           cp CNAME dist/CNAME || true
