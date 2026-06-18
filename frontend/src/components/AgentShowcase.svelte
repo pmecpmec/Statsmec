@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { agentRole, roleColor } from '../lib/valorant';
+
   type AgentRow = {
     name: string;
     games: number;
@@ -7,53 +9,61 @@
     win_rate: number;
   };
 
-  let { agents = [] }: { agents?: AgentRow[] } = $props();
-
-  // Subtle per-agent glow so cards don't look identical; falls back across the list.
-  const ACCENTS = [
-    'from-sky-400/30 to-transparent',
-    'from-fuchsia-500/25 to-transparent',
-    'from-violet-500/30 to-transparent',
-  ];
+  let { agents = [], loading = false }: { agents?: AgentRow[]; loading?: boolean } = $props();
 
   const hasData = $derived(agents.length > 0);
 
-  // Placeholder shown until real match data is aggregated.
+  // Explicit "no data yet" preview — visibly a sample, never posing as real stats.
   const placeholder: AgentRow[] = [
-    { name: 'Jett', games: 0, wins: 0, kd: 1.35, win_rate: 62 },
-    { name: 'Reyna', games: 0, wins: 0, kd: 1.28, win_rate: 58 },
-    { name: 'Omen', games: 0, wins: 0, kd: 1.12, win_rate: 55 },
+    { name: 'Jett', games: 0, wins: 0, kd: 0, win_rate: 0 },
+    { name: 'Sova', games: 0, wins: 0, kd: 0, win_rate: 0 },
+    { name: 'Killjoy', games: 0, wins: 0, kd: 0, win_rate: 0 },
   ];
 
   const rows = $derived(hasData ? agents.slice(0, 3) : placeholder);
 </script>
 
 <div class="grid gap-4 sm:grid-cols-3">
-  {#each rows as a, i (a.name)}
+  {#each rows as a, i (a.name + i)}
+    {@const role = agentRole(a.name)}
+    {@const color = roleColor(role)}
     <div
-      class="group relative overflow-hidden border border-game bg-game-card p-5 transition-all duration-300 hover:border-[var(--accent)]/35"
-      class:opacity-70={!hasData}
-      style="border-radius: var(--radius-card); box-shadow: 0 0 0 transparent;"
+      class="group relative overflow-hidden border border-game bg-game-card p-5 transition-all duration-300"
+      class:opacity-60={!hasData}
+      style={`border-radius: var(--radius-card); --chip-color: ${color};`}
     >
-      <div
-        class="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        style="background: radial-gradient(circle at 80% 20%, var(--glow-accent), transparent 55%);"
-      ></div>
-      <div
-        class="absolute -right-6 top-0 h-32 w-32 rounded-full bg-gradient-to-br opacity-40 blur-2xl {ACCENTS[i % ACCENTS.length]}"
-      ></div>
-      <p class="font-display text-lg font-semibold text-game-primary">{a.name}</p>
-      <p class="text-xs font-medium uppercase tracking-wider text-game-accent">
-        {hasData ? `${a.games} game${a.games === 1 ? '' : 's'}` : 'Sample'}
-      </p>
-      <div class="mt-4 flex justify-between gap-4 border-t border-game pt-4 text-sm">
-        <div>
-          <span class="block text-[0.65rem] uppercase text-game-muted">Win rate</span>
-          <span class="font-mono font-bold text-game-accent">{a.win_rate.toFixed(0)}%</span>
+      <!-- Role-tinted top accent + hover glow -->
+      <div class="absolute inset-x-0 top-0 h-[3px]" style={`background: linear-gradient(90deg, ${color}, transparent 80%);`}></div>
+      {#if hasData}
+        <div
+          class="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full opacity-30 blur-2xl transition-opacity duration-300 group-hover:opacity-60"
+          style={`background: ${color};`}
+        ></div>
+      {/if}
+
+      <div class="relative flex items-start justify-between gap-2">
+        <div class="min-w-0">
+          <p class="font-display text-lg font-semibold text-game-primary">{a.name}</p>
+          <p class="mt-0.5 text-xs font-medium text-game-muted">
+            {#if hasData}
+              {a.games} game{a.games === 1 ? '' : 's'}
+              {#if a.wins > 0}· {a.wins}W{/if}
+            {:else}
+              {loading ? 'Loading…' : 'Awaiting matches'}
+            {/if}
+          </p>
         </div>
+        <span class="val-chip shrink-0">{role ?? 'Agent'}</span>
+      </div>
+
+      <div class="relative mt-4 flex justify-between gap-4 border-t border-game pt-4 text-sm">
         <div>
-          <span class="block text-[0.65rem] uppercase text-game-muted">K/D</span>
-          <span class="font-mono font-bold text-game-accent-2">{a.kd.toFixed(2)}</span>
+          <span class="block text-[0.65rem] uppercase tracking-wider text-game-muted">Win rate</span>
+          <span class="font-mono font-bold text-atk">{hasData ? `${a.win_rate.toFixed(0)}%` : '—'}</span>
+        </div>
+        <div class="text-right">
+          <span class="block text-[0.65rem] uppercase tracking-wider text-game-muted">K/D</span>
+          <span class="font-mono font-bold text-def">{hasData ? a.kd.toFixed(2) : '—'}</span>
         </div>
       </div>
     </div>
@@ -61,5 +71,9 @@
 </div>
 
 {#if !hasData}
-  <p class="mt-3 text-center text-[0.7rem] text-game-muted">Sample data — fills in once matches load.</p>
+  <p class="mt-3 text-center text-[0.7rem] text-game-muted">
+    {loading
+      ? 'Loading agent stats…'
+      : 'Preview agents — your real top three fill in once match data loads.'}
+  </p>
 {/if}

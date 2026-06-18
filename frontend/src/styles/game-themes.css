@@ -95,6 +95,23 @@
     --grid-size: 36px;
     --hud-bevel: 14px;
     --font-mono: 'Space Grotesk', ui-monospace, monospace;
+
+    /* Valorant ATK / DEF duality (attacker red vs defender teal) */
+    --atk: #ff4655;
+    --atk-bright: #ff7b86;
+    --atk-soft: rgba(255, 70, 85, 0.14);
+    --atk-line: rgba(255, 123, 134, 0.5);
+    --def: #2ad4c8;
+    --def-bright: #6ff2e8;
+    --def-soft: rgba(42, 212, 200, 0.12);
+    --def-line: rgba(111, 242, 232, 0.5);
+
+    /* Agent-role identity colors */
+    --role-duelist: #ff4655;
+    --role-initiator: #f5b942;
+    --role-controller: #a974ff;
+    --role-sentinel: #2ad4c8;
+    --role-default: #8b95a5;
   }
 }
 
@@ -155,5 +172,17 @@
   }
   .border-t-side {
     border-color: var(--t);
+  }
+  .text-atk {
+    color: var(--atk-bright);
+  }
+  .text-def {
+    color: var(--def-bright);
+  }
+  .bg-atk {
+    background-color: var(--atk);
+  }
+  .bg-def {
+    background-color: var(--def);
   }
 }

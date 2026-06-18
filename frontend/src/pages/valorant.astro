@@ -5,6 +5,16 @@ import DashboardTopBar from '../components/DashboardTopBar.astro';
 import ValorantPageMain from '../components/ValorantPageMain.svelte';
 
 const API = import.meta.env.PUBLIC_API_URL ?? 'http://127.0.0.1:8000/api/v1';
+
+// Standard VALORANT ability-slot layout. This labels what each slot IS (the
+// canonical kit structure) — it is NOT per-match usage data, which the Riot
+// match API does not expose. Presented as an intentional kit legend, not stats.
+const abilitySlots = [
+  { key: 'C', label: 'Basic', note: 'Buy each round', color: 'var(--def)' },
+  { key: 'Q', label: 'Basic', note: 'Buy each round', color: 'var(--def)' },
+  { key: 'E', label: 'Signature', note: 'Recharges in-game', color: 'var(--role-controller)' },
+  { key: 'X', label: 'Ultimate', note: 'Charge with orbs & kills', color: 'var(--atk)' },
+];
 ---
 
 <MainLayout
@@ -18,35 +28,73 @@ const API = import.meta.env.PUBLIC_API_URL ?? 'http://127.0.0.1:8000/api/v1';
 
     <ValorantPageMain client:load apiUrl={API} />
 
-    <section id="stats" class="border-t border-game bg-game-secondary/40 px-4 py-16 md:px-8">
-      <div class="mx-auto max-w-6xl">
-        <h2 class="section-title-accent reveal mb-8 text-center font-display text-3xl font-semibold text-game-primary md:mb-10 md:text-4xl">
-          Ability usage
-        </h2>
-        <div class="glass-card reveal stagger-1 mx-auto max-w-2xl">
-          <p class="text-center text-sm text-game-muted">
-            Placeholder for ability casts per round — wire when match timeline data is ingested.
-          </p>
-          <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {['C', 'Q', 'E', 'X'].map((k) => (
+    <section id="stats" class="relative border-t border-game bg-game-secondary/40 px-4 py-16 md:px-8">
+      <div class="mx-auto max-w-5xl">
+        <div class="reveal mb-8 flex flex-col items-center text-center md:mb-10">
+          <span class="section-kicker mb-2">Ability slots</span>
+          <h2 class="section-title-accent font-display text-3xl font-semibold text-game-primary md:text-4xl">
+            Agent kit
+          </h2>
+        </div>
+
+        <div class="glass-card val-scan reveal stagger-1 relative overflow-hidden">
+          <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <span class="val-chip" style="--chip-color: var(--atk);">Kit layout</span>
+              <span class="hud-label">C · Q · E · X</span>
+            </div>
+            <span class="hud-label">Per-round casts · not tracked yet</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {abilitySlots.map((s) => (
               <div
-                class="border border-game bg-game-muted py-4 text-center font-mono text-lg font-bold text-game-accent-2"
-                style="border-radius: var(--radius-card);"
+                class="group relative flex flex-col items-center gap-3 overflow-hidden border border-game bg-game-muted p-5 text-center transition-colors"
+                style={`border-radius: var(--radius-card);`}
               >
-                {k}
+                <span
+                  class="absolute inset-x-0 top-0 h-[3px]"
+                  style={`background: linear-gradient(90deg, ${s.color}, transparent 85%);`}
+                ></span>
+                <span
+                  class="flex h-12 w-12 items-center justify-center rounded-lg border font-mono text-xl font-bold"
+                  style={`color: ${s.color}; border-color: color-mix(in srgb, ${s.color} 45%, transparent); background: color-mix(in srgb, ${s.color} 12%, transparent); box-shadow: 0 0 18px color-mix(in srgb, ${s.color} 22%, transparent);`}
+                >
+                  {s.key}
+                </span>
+                <span class="font-display text-sm font-semibold text-game-primary">{s.label}</span>
+                <span class="text-[0.7rem] text-game-muted">{s.note}</span>
               </div>
             ))}
           </div>
+
+          <p class="mt-6 text-center text-xs text-game-muted">
+            The Riot match API reports kills, deaths and ACS — not per-round ability casts.
+            This maps the standard kit so cast tracking can slot straight in once round-timeline
+            data is ingested.
+          </p>
         </div>
       </div>
     </section>
 
-    <section id="settings" class="bg-game-primary px-4 py-12 md:px-8">
-      <div class="mx-auto max-w-2xl text-center">
-        <p class="text-sm text-game-muted">
-          Crosshair &amp; sensitivity live on the <a href="/" class="text-game-accent underline hover:no-underline">CS2</a> page.
-          Valorant loadout UI can mirror that pattern here later.
-        </p>
+    <section id="settings" class="relative bg-game-primary px-4 py-16 md:px-8">
+      <div class="mx-auto max-w-5xl">
+        <div class="reveal mb-8 flex flex-col items-center text-center md:mb-10">
+          <span class="section-kicker mb-2">Config &amp; loadout</span>
+          <h2 class="section-title-accent font-display text-3xl font-semibold text-game-primary md:text-4xl">
+            Setup
+          </h2>
+        </div>
+
+        <div class="glass-card val-rail reveal stagger-1 mx-auto max-w-2xl pl-7" style="--rail-color: var(--def);">
+          <h3 class="mb-2 font-display text-lg font-semibold text-game-primary">Crosshair &amp; sensitivity</h3>
+          <p class="text-sm text-game-muted">
+            The full crosshair and sensitivity loadout lives on the
+            <a href="/" class="font-semibold text-game-accent underline-offset-2 hover:underline">CS2</a>
+            page. A Valorant-specific loadout panel will mirror that layout here once the
+            in-game settings are exported.
+          </p>
+        </div>
       </div>
     </section>
   </div>

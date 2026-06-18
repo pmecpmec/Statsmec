@@ -273,6 +273,82 @@ body {
     transform: translateY(-2px);
   }
 
+  /* ============================================================
+     Valorant — tactical-future agent dossier language
+     ============================================================ */
+
+  /* Clipped-corner panel (VALORANT's signature angular card). Decorative
+     accent corner is drawn so the glow/radius of glass-card stays intact. */
+  [data-game='valorant'] .val-panel {
+    position: relative;
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% calc(100% - var(--hud-bevel)),
+      calc(100% - var(--hud-bevel)) 100%,
+      0 100%
+    );
+  }
+
+  /* Side rail that reads as an ATK / DEF / role marker on the left edge */
+  .val-rail {
+    position: relative;
+  }
+  .val-rail::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.85rem;
+    bottom: 0.85rem;
+    width: 3px;
+    border-radius: 3px;
+    background: var(--rail-color, var(--accent));
+    box-shadow: 0 0 12px var(--rail-color, var(--accent));
+  }
+
+  /* Role / side chip — sharp, uppercase, mono micro-label with a colored dot */
+  .val-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--chip-color, var(--accent)) 40%, transparent);
+    background: color-mix(in srgb, var(--chip-color, var(--accent)) 14%, transparent);
+    padding: 0.2rem 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--chip-color, var(--accent));
+  }
+  .val-chip::before {
+    content: '';
+    height: 0.4rem;
+    width: 0.4rem;
+    border-radius: 9999px;
+    background: var(--chip-color, var(--accent));
+    box-shadow: 0 0 8px var(--chip-color, var(--accent));
+  }
+
+  /* Tactical scanline texture for hero / feature panels (very subtle) */
+  [data-game='valorant'] .val-scan::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background-image: repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.022) 0px,
+      rgba(255, 255, 255, 0.022) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+    -webkit-mask-image: linear-gradient(180deg, #000, transparent 60%);
+    mask-image: linear-gradient(180deg, #000, transparent 60%);
+  }
+
   /* Section heading kicker — small mono eyebrow used above titles */
   .section-kicker {
     font-family: var(--font-mono);
