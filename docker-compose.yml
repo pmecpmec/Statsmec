@@ -45,6 +45,13 @@ services:
       RIOT_GAME_NAME: ${RIOT_GAME_NAME:-}
       RIOT_TAG_LINE: ${RIOT_TAG_LINE:-}
       RIOT_RIOT_IDS: ${RIOT_RIOT_IDS:-}
+      MONGODB_URI: ${MONGODB_URI:-}
+      MONGODB_DB_NAME: ${MONGODB_DB_NAME:-statsmec}
+      ALLSTAR_SERVER_API_KEY: ${ALLSTAR_SERVER_API_KEY:-}
+      ALLSTAR_PUBLIC_API_KEY: ${ALLSTAR_PUBLIC_API_KEY:-}
+      PMEC_PREMIER_RATING: ${PMEC_PREMIER_RATING:-}
+      PMEC_PREMIER_COLOR: ${PMEC_PREMIER_COLOR:-}
+      PMEC_PREMIER_REMOTE_URL: ${PMEC_PREMIER_REMOTE_URL:-}
     ports:
       - "8000:8000"
 
@@ -52,11 +59,13 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      # PUBLIC_* vars are baked into the static build at build time, so they
+      # must be passed as build args (a runtime `environment` has no effect).
+      args:
+        PUBLIC_API_URL: ${PUBLIC_API_URL:-http://backend:8000/api/v1}
     container_name: statsmec-frontend
     depends_on:
       - backend
-    environment:
-      VITE_API_BASE_URL: http://backend:8000/api/v1
     ports:
       - "5173:5173"
 

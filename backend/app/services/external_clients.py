@@ -80,21 +80,6 @@ def _riot_headers() -> Dict[str, str]:
     return {"X-Riot-Token": key}
 
 
-async def fetch_steam_match_history(steam_id: str, limit: int = 20) -> Dict[str, Any]:
-    if not settings.STEAM_API_KEY:
-        raise RuntimeError("STEAM_API_KEY is not configured")
-
-    # Example endpoint; adjust parameters as needed for CS.
-    params = {
-        "key": settings.STEAM_API_KEY,
-        "steamid": steam_id,
-        "count": limit,
-    }
-    resp = await steam_client.get("/ISteamUserStats/GetUserStatsForGame/v2/", params=params)
-    resp.raise_for_status()
-    return resp.json()
-
-
 async def fetch_steam_profile(steam_id: str) -> Optional[Dict[str, Any]]:
     """
     Lightweight wrapper around GetPlayerSummaries to obtain the current avatar.

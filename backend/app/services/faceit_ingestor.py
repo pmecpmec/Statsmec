@@ -126,7 +126,6 @@ def _extract_all_players_from_stats(
 
     rounds_data = stats_payload.get("rounds") or []
     for rnd in rounds_data:
-        round_stats = rnd.get("round_stats") or {}
         teams = rnd.get("teams") or []
 
         for team in teams:

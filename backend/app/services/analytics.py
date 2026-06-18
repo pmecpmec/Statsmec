@@ -119,7 +119,6 @@ async def compute_rank_comparison(db: AsyncSession, user_id: int, rank: str | No
 
     # Player aggregates (simplified)
     kd_map = await compute_kd_per_map(db, user_id)
-    kd_weapon = await compute_kd_per_weapon(db, user_id)
     win_trend = await compute_win_rate_trend(db, user_id)
 
     player_overall_kd = (

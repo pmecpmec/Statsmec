@@ -99,7 +99,7 @@ Set these in your **backend** environment (e.g. Render → your Web Service → 
 
 For the site to call your backend in production, set:
 
-- **`PUBLIC_API_URL`** = your backend base URL, e.g. `https://api.pmec.dev`  
-  (no trailing slash; the app appends `/api/v1` for requests.)
+- **`PUBLIC_API_URL`** = your backend API base URL **including** the `/api/v1` suffix, e.g. `https://api.pmec.dev/api/v1`  
+  (no trailing slash; the app uses this value as-is and does **not** append `/api/v1`.)
 
 Set this in your **frontend** build environment (e.g. GitHub Actions env or Vite/Astro env for the deploy that builds the static site).

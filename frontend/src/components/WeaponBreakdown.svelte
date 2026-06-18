@@ -78,7 +78,7 @@
           {
             label: 'Accuracy %',
             data: weapons.map((w) => w.accuracy),
-            backgroundColor: weapons.map((_, i) => COLORS[i % COLORS.length]),
+            backgroundColor: barColors,
             borderRadius: 6,
             barThickness: 22,
           },

@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import PMEC_FACEIT_NICKNAME, PMEC_STEAM_ID, settings
 from app.db.session import get_db
 from app.models.match import Match, MatchPlayer, Round, WeaponStat
-from app.services.auto_sync import _resolve_player_id, _sync_once
+from app.services.auto_sync import _sync_once
 from app.services.allstar_client import fetch_user_clips, normalize_clips
 from app.services.external_clients import (
     fetch_csgo_classic_stats,

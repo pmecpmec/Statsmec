@@ -1,4 +1,6 @@
-from typing import List
+import logging
+from datetime import datetime, timezone
+from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -10,9 +12,11 @@ from app.models.user import User
 from app.schemas.match import PlayerScore, RoundDetail, Scoreboard, WeaponStatDetail
 from app.schemas.user import MatchSummary, User as UserSchema, UserCreate
 from app.services.cache import cached
-from app.services.external_clients import fetch_steam_match_history, fetch_faceit_match_history
+from app.services.external_clients import fetch_faceit_match_history
 from app.services.faceit_ingestor import upsert_faceit_matches
 
+
+log = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -167,12 +171,20 @@ async def sync_user_matches(
         raise HTTPException(status_code=404, detail="User not found")
 
     async def _sync() -> dict:
-        steam_data = None
         faceit_data = None
 
         if user.steam_id:
-            steam_data = await fetch_steam_match_history(user.steam_id)
-            await _upsert_matches_from_steam(db, user.id, steam_data)
+            # Steam's public Web API does NOT expose CS2 match history — that
+            # requires Game Coordinator / authenticated access we don't have.
+            # We therefore skip Steam match ingestion entirely instead of
+            # writing fabricated rows. Lifetime CS2 stats (a different concern)
+            # are served separately via fetch_csgo_classic_stats.
+            log.info(
+                "Skipping Steam match sync for user %s: Steam Web API does not "
+                "provide CS2 match history.",
+                user.id,
+            )
+            await _upsert_matches_from_steam(db, user.id, None)
 
         if user.faceit_id:
             faceit_data = await fetch_faceit_match_history(user.faceit_id, game="cs2")
@@ -181,7 +193,7 @@ async def sync_user_matches(
         await db.commit()
 
         return {
-            "steam_synced": steam_data is not None,
+            "steam_synced": False,
             "faceit_synced": faceit_data is not None,
         }
 
@@ -189,21 +201,75 @@ async def sync_user_matches(
     return result
 
 
-async def _upsert_matches_from_steam(db: AsyncSession, user_id: int, payload: dict) -> None:
+def _parse_steam_ts(value: Any) -> Optional[datetime]:
     """
-    Map a Steam match history‑like payload into Match rows.
-    Because Steam exposes different schemas per game, this stays conservative
-    and tries to read a few generic fields only.
+    Best-effort parse of a Steam-style timestamp into an aware datetime.
+    Accepts unix epoch seconds/milliseconds (int/str) or ISO-8601 strings.
+    Returns None when the value can't be interpreted as a real timestamp.
     """
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    # Numeric epoch (seconds or milliseconds).
+    try:
+        ts = int(value)
+    except (TypeError, ValueError):
+        ts = None
+    if ts is not None:
+        if ts >= 1e12:  # milliseconds
+            ts = ts / 1000.0
+        try:
+            return datetime.fromtimestamp(ts, tz=timezone.utc)
+        except (OverflowError, OSError, ValueError):
+            return None
+    # ISO-8601 string fallback.
+    if isinstance(value, str):
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+    return None
+
+
+async def _upsert_matches_from_steam(
+    db: AsyncSession, user_id: int, payload: Optional[dict]
+) -> int:
+    """
+    Map a Steam match-history-like payload into Match rows.
+
+    Steam's public Web API does not currently provide CS2 match history, so
+    callers pass ``None`` and this becomes a safe no-op. The defensive parsing
+    below is kept so that a real Steam match source (e.g. a future GC-backed
+    ingestor) can be wired in without re-deriving the schema. It never writes
+    rows with a missing/invalid ``started_at`` (the column is non-nullable).
+
+    Returns the number of new matches inserted.
+    """
+    if not payload:
+        return 0
+
     matches = (
         payload.get("matches")
-        or payload.get("result", {}).get("matches")
+        or (payload.get("result") or {}).get("matches")
         or []
     )
 
+    inserted = 0
     for item in matches:
-        external_id = str(item.get("match_id") or item.get("id", ""))
+        if not isinstance(item, dict):
+            continue
+
+        external_id = str(item.get("match_id") or item.get("id") or "")
         if not external_id:
+            continue
+
+        started_at = _parse_steam_ts(
+            item.get("start_time") or item.get("created_at")
+        )
+        if started_at is None:
+            # started_at is required (non-nullable); skip unusable rows.
             continue
 
         existing = await db.execute(
@@ -212,16 +278,20 @@ async def _upsert_matches_from_steam(db: AsyncSession, user_id: int, payload: di
         match = existing.scalar_one_or_none()
 
         if match is None:
+            duration = item.get("duration")
             match = Match(
                 external_match_id=external_id,
                 user_id=user_id,
                 provider="steam",
                 map_name=item.get("map") or item.get("map_name"),
-                started_at=item.get("start_time") or item.get("created_at"),
-                duration_seconds=item.get("duration") or None,
+                started_at=started_at,
+                duration_seconds=int(duration) if duration is not None else None,
                 score_team=None,
                 score_opponent=None,
                 result=None,
             )
             db.add(match)
+            inserted += 1
+
+    return inserted
 

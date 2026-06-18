@@ -8,16 +8,22 @@
   let error = $state('');
   let canvas: HTMLCanvasElement | undefined = $state(undefined);
   let rangeLabel = $state('Last month');
+  let chartInstance: { destroy: () => void } | null = null;
 
   onMount(async () => {
     try {
       const res = await fetch(`${apiUrl}/analytics/users/1`);
       const json = await res.json();
       data = (json.win_rate_trend ?? []) as TrendPoint[];
-      if (data.length && canvas) drawChart();
     } catch {
       error = 'Could not load trends.';
     }
+  });
+
+  // Draw once both the data has loaded and the canvas is mounted (the canvas
+  // only renders when data.length > 0, so we can't rely on onMount timing).
+  $effect(() => {
+    if (data.length && canvas) drawChart();
   });
 
   function accentColors(): { line: string; fill: string; tick: string; grid: string; tipBg: string; tipTitle: string; tipBody: string } {
@@ -52,9 +58,14 @@
     const { Chart, registerables } = await import('chart.js');
     Chart.register(...registerables);
 
+    if (chartInstance) {
+      chartInstance.destroy();
+      chartInstance = null;
+    }
+
     const c = accentColors();
 
-    new Chart(canvas, {
+    chartInstance = new Chart(canvas, {
       type: 'line',
       data: {
         labels: data.map((d) => d.date),

@@ -103,15 +103,9 @@ npm install
 npm run dev
 ```
 
-Run lint and tests:
+Available scripts: `npm run dev`, `npm run build`, `npm run preview`.
 
-```bash
-cd frontend
-npm run lint
-npm test
-```
-
-Ensure `VITE_API_BASE_URL` in your frontend environment (or the docker‑compose service) points at the FastAPI backend, e.g. `http://localhost:8000/api/v1`.
+Ensure `PUBLIC_API_URL` in your frontend environment (or the docker‑compose service) points at the FastAPI backend **including** the `/api/v1` suffix, e.g. `http://localhost:8000/api/v1`.
 
 ---
 

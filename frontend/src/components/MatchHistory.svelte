@@ -153,7 +153,7 @@
       const newMatches: Match[] = await res.json();
       if (newMatches.length && (!matches.length || newMatches[0].id !== matches[0].id)) {
         matches = newMatches;
-        if (!selectedId && matches.length) selectMatch(matches[0].id);
+        if (!compact && !selectedId && matches.length) selectMatch(matches[0].id);
       }
     } catch {
       if (!matches.length) {
