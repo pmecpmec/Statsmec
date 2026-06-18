@@ -37,3 +37,9 @@ dump.rdb
 
 # Poetry
 poetry.lock
+
+# Astro generated cache
+frontend/.astro/
+
+# Claude Code local state
+.claude/
