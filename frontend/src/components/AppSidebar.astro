@@ -11,9 +11,13 @@ const home = game === 'valorant' ? '/valorant' : '/';
   class="fixed left-0 top-0 z-[60] flex h-screen w-[4.25rem] flex-col items-center border-r border-game bg-game-card/95 py-5 backdrop-blur-md"
   aria-label="Main navigation"
 >
+  <span
+    class="pointer-events-none absolute inset-y-0 right-0 w-px"
+    style="background: linear-gradient(180deg, var(--ct-bright), transparent 35%, transparent 65%, var(--t-bright));"
+    aria-hidden="true"></span>
   <a
     href={home}
-    class="mb-6 flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent)] text-sm font-bold text-white shadow-sm"
+    class="mb-6 flex h-10 w-10 items-center justify-center rounded-md bg-[var(--accent)] font-mono text-base font-bold text-[#0b0f14] shadow-sm transition-transform hover:scale-105"
     title="Statsmec"
   >
     S

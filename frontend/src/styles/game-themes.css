@@ -32,6 +32,24 @@
     --scrollbar-thumb: rgba(242, 169, 0, 0.35);
     --glow-accent: rgba(242, 169, 0, 0.25);
     --accent-3: #5c6b7a;
+
+    /* CS2 CT vs T tactical duality (broadcast-inspired: CT ~ #5e98d9, T ~ #d4a74a) */
+    --ct: #5b98d8;
+    --ct-bright: #7cc0f5;
+    --ct-soft: rgba(91, 152, 216, 0.12);
+    --ct-line: rgba(124, 192, 245, 0.4);
+    --t: #e0a82e;
+    --t-bright: #f4c94b;
+    --t-soft: rgba(224, 168, 46, 0.12);
+    --t-line: rgba(244, 201, 75, 0.4);
+    --win: #4ade80;
+    --loss: #f87171;
+
+    /* HUD texture + angular language */
+    --grid-line: rgba(230, 237, 243, 0.028);
+    --grid-size: 32px;
+    --hud-bevel: 10px;
+    --font-mono: 'IBM Plex Mono', 'JetBrains Mono', ui-monospace, monospace;
   }
 
   [data-game='valorant'] {
@@ -61,6 +79,22 @@
     --badge-loss-bg: rgba(0, 229, 255, 0.12);
     --badge-loss-text: #22d3ee;
     --scrollbar-thumb: rgba(255, 70, 85, 0.4);
+
+    /* Valorant fallbacks for the shared CT/T helpers (map to its own palette) */
+    --ct: #00e5ff;
+    --ct-bright: #67f3ff;
+    --ct-soft: rgba(0, 229, 255, 0.12);
+    --ct-line: rgba(0, 229, 255, 0.4);
+    --t: #ff4655;
+    --t-bright: #ff7b86;
+    --t-soft: rgba(255, 70, 85, 0.14);
+    --t-line: rgba(255, 70, 85, 0.4);
+    --win: #ff4655;
+    --loss: #22d3ee;
+    --grid-line: rgba(255, 255, 255, 0.03);
+    --grid-size: 36px;
+    --hud-bevel: 14px;
+    --font-mono: 'Space Grotesk', ui-monospace, monospace;
   }
 }
 
@@ -97,5 +131,29 @@
   }
   .ring-game-accent {
     --tw-ring-color: var(--accent);
+  }
+  .text-ct {
+    color: var(--ct-bright);
+  }
+  .text-t {
+    color: var(--t-bright);
+  }
+  .text-win {
+    color: var(--win);
+  }
+  .text-loss {
+    color: var(--loss);
+  }
+  .bg-ct {
+    background-color: var(--ct);
+  }
+  .bg-t {
+    background-color: var(--t);
+  }
+  .border-ct {
+    border-color: var(--ct);
+  }
+  .border-t-side {
+    border-color: var(--t);
   }
 }

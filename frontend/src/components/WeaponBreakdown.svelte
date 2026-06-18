@@ -64,9 +64,12 @@
     Chart.register(...registerables);
 
     const t = chartTheme();
-    const line = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#f2a900';
+    const s = getComputedStyle(document.documentElement);
+    const line = s.getPropertyValue('--accent').trim() || '#f2a900';
+    const ct = s.getPropertyValue('--ct-bright').trim() || '#7cc0f5';
+    const tt = s.getPropertyValue('--t-bright').trim() || '#f4c94b';
     const barColors = weapons.map((_, i) => {
-      const hues = [line, '#00e5ff', '#8b5cf6', '#f2a900', '#94a3b8'];
+      const hues = [line, ct, tt, '#94a3b8'];
       return hues[i % hues.length];
     });
 
@@ -178,13 +181,17 @@
           ></div>
         </div>
         <p class="text-center font-display text-sm font-semibold text-game-primary">{w.weapon}</p>
-        <div class="flex justify-between gap-2 text-xs text-game-muted">
-          <span>Usage</span>
-          <span class="font-semibold text-game-accent">{w.accuracy}%</span>
-        </div>
-        <div class="flex justify-between gap-2 text-xs text-game-muted">
-          <span>Kills</span>
-          <span class="font-medium text-game-primary">—</span>
+        <div>
+          <div class="flex justify-between gap-2 text-xs text-game-muted">
+            <span class="hud-label">Usage</span>
+            <span class="font-mono font-semibold text-game-accent">{w.accuracy}%</span>
+          </div>
+          <div class="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-game-secondary">
+            <div
+              class="h-full rounded-full"
+              style={`width:${Math.max(4, Math.min(100, w.accuracy))}%; background: linear-gradient(90deg, var(--ct-bright), var(--accent), var(--t-bright));`}
+            ></div>
+          </div>
         </div>
       </div>
     {/each}

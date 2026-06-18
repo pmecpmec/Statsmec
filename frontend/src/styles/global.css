@@ -37,12 +37,20 @@ body {
 }
 
 [data-game='cs2'] .app-bg-decoration {
-  background-image: linear-gradient(
-    180deg,
-    rgba(242, 169, 0, 0.02) 0%,
-    transparent 32%
-  );
   background-color: var(--bg-primary);
+  background-image:
+    radial-gradient(ellipse 70% 45% at 18% -5%, var(--ct-soft), transparent 60%),
+    radial-gradient(ellipse 70% 45% at 82% -5%, var(--t-soft), transparent 60%),
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    100% 100%,
+    var(--grid-size) var(--grid-size),
+    var(--grid-size) var(--grid-size);
+  background-position: 0 0, 0 0, center top, center top;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
 }
 
 .hero-waves {
@@ -190,6 +198,98 @@ body {
     background: var(--badge-loss-bg);
     color: var(--badge-loss-text);
   }
+
+  /* Monospace tactical micro-label (HUD readout style) */
+  .hud-label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--text-muted);
+  }
+
+  /* Angular, beveled HUD panel (CS2 broadcast feel). Falls back to radius elsewhere. */
+  [data-game='cs2'] .hud-panel {
+    position: relative;
+    clip-path: polygon(
+      0 0,
+      calc(100% - var(--hud-bevel)) 0,
+      100% var(--hud-bevel),
+      100% 100%,
+      var(--hud-bevel) 100%,
+      0 calc(100% - var(--hud-bevel))
+    );
+  }
+
+  /* Accent rail that reads as a "team side" marker on cards/sections */
+  .hud-rail {
+    position: relative;
+  }
+  .hud-rail::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.15rem;
+    bottom: 0.15rem;
+    width: 3px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, var(--ct-bright), var(--t-bright));
+  }
+  .hud-rail-ct::before {
+    background: var(--ct-bright);
+  }
+  .hud-rail-t::before {
+    background: var(--t-bright);
+  }
+
+  /* CS2 cards get a crisp top hairline + bevel; Valorant keeps its glow */
+  [data-game='cs2'] .glass-card {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 120px),
+      var(--bg-card);
+  }
+  [data-game='cs2'] .glass-card::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-soft) 18%, transparent 60%);
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  [data-game='cs2'] .stat-card {
+    position: relative;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 60%),
+      var(--bg-card);
+    transition:
+      border-color 0.2s ease,
+      transform 0.2s ease;
+  }
+  [data-game='cs2'] .stat-card:hover {
+    border-color: var(--ct-line);
+    transform: translateY(-2px);
+  }
+
+  /* Section heading kicker — small mono eyebrow used above titles */
+  .section-kicker {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.32em;
+    color: var(--accent);
+  }
+}
+
+/* CS2 section accent: a short angular dash instead of a full bar */
+[data-game='cs2'] .section-title-accent::after {
+  width: 56px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--ct-bright), var(--t-bright));
+  border-radius: 1px;
 }
 
 .reveal {
@@ -268,5 +368,186 @@ body {
     box-shadow:
       0 0 40px rgba(255, 70, 85, 0.55),
       0 0 60px rgba(0, 229, 255, 0.12);
+  }
+}
+
+/* ============================================================
+   Tactical intro loader — CT vs T "round start" overlay
+   ============================================================ */
+#intro-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  opacity: 1;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+/* Skip flash on repeat visits (set by inline head script) */
+html.intro-skip #intro-loader {
+  display: none !important;
+}
+#intro-loader.intro-done {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.intro-sides {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.intro-side {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 56%;
+}
+.intro-side-ct {
+  left: 0;
+  background:
+    radial-gradient(ellipse 80% 70% at 0% 50%, var(--ct-soft), transparent 70%);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 14vh) 100%, 0 100%);
+  transform: translateX(-4%);
+  animation: introSlideL 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.intro-side-t {
+  right: 0;
+  background:
+    radial-gradient(ellipse 80% 70% at 100% 50%, var(--t-soft), transparent 70%);
+  clip-path: polygon(14vh 0, 100% 0, 100% 100%, 0 100%);
+  transform: translateX(4%);
+  animation: introSlideR 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.intro-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: var(--grid-size) var(--grid-size);
+  -webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, #000, transparent 75%);
+  mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, #000, transparent 75%);
+}
+
+.intro-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  text-align: center;
+}
+.intro-badges {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+.intro-side-tag {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+}
+.intro-side-tag.ct {
+  color: var(--ct-bright);
+}
+.intro-side-tag.t {
+  color: var(--t-bright);
+}
+.intro-vs {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+.intro-logo {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(2.5rem, 9vw, 4.5rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: var(--text-primary);
+  animation: introLogoIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+.intro-logo span {
+  color: var(--accent);
+}
+.intro-tagline {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Buy-timer / defuse style progress bar */
+.intro-bar {
+  position: relative;
+  width: min(320px, 70vw);
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-card-muted);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+.intro-bar-fill {
+  position: absolute;
+  inset: 0;
+  width: 0;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--ct-bright), var(--accent), var(--t-bright));
+  animation: introFill 1.6s cubic-bezier(0.5, 0, 0.2, 1) 0.15s forwards;
+}
+.intro-status {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+@keyframes introSlideL {
+  from { opacity: 0; transform: translateX(-14%); }
+  to { opacity: 1; transform: translateX(-4%); }
+}
+@keyframes introSlideR {
+  from { opacity: 0; transform: translateX(14%); }
+  to { opacity: 1; transform: translateX(4%); }
+}
+@keyframes introLogoIn {
+  from { opacity: 0; transform: translateY(12px); letter-spacing: 0.2em; }
+  to { opacity: 1; transform: translateY(0); letter-spacing: 0.04em; }
+}
+@keyframes introFill {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-left,
+  .reveal-right {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .intro-side-ct,
+  .intro-side-t,
+  .intro-logo {
+    animation: none !important;
+  }
+  .intro-bar-fill {
+    width: 100% !important;
+    animation: none !important;
+  }
+  #intro-loader {
+    transition: opacity 0.3s ease, visibility 0.3s ease;
   }
 }

@@ -62,24 +62,24 @@
 <div class="flex flex-wrap items-center justify-center gap-3">
   {#if data}
     <div
-      class="flex items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2 shadow-sm"
+      class="flex items-center gap-2 rounded-full border border-game bg-game-card px-4 py-2 shadow-sm"
     >
       {#if data.status === 'in_game'}
         <span class="relative flex h-3 w-3">
-          <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-          <span class="relative inline-flex h-3 w-3 rounded-full bg-emerald-500"></span>
+          <span class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" style="background: var(--win);"></span>
+          <span class="relative inline-flex h-3 w-3 rounded-full" style="background: var(--win);"></span>
         </span>
-        <span class="text-sm font-semibold text-emerald-700">Live — in game</span>
+        <span class="font-mono text-xs font-bold uppercase tracking-wider text-win">Live — in game</span>
       {:else if data.status === 'online'}
-        <span class="relative inline-flex h-3 w-3 rounded-full bg-sky-500"></span>
-        <span class="text-sm text-game-muted">
+        <span class="relative inline-flex h-3 w-3 rounded-full" style="background: var(--ct-bright);"></span>
+        <span class="text-sm text-game-secondary">
           {data.total_matches} matches
           {#if data.last_match_ago}
-            <span class="text-stone-400"> · last {data.last_match_ago}</span>
+            <span class="text-game-muted"> · last {data.last_match_ago}</span>
           {/if}
         </span>
       {:else}
-        <span class="relative inline-flex h-3 w-3 rounded-full bg-stone-400"></span>
+        <span class="relative inline-flex h-3 w-3 rounded-full bg-game-muted"></span>
         <span class="text-sm text-game-muted">Offline</span>
       {/if}
     </div>

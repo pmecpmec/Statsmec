@@ -1,5 +1,6 @@
 ---
 import Footer from '../components/Footer.astro';
+import IntroLoader from '../components/IntroLoader.astro';
 import '../styles/global.css';
 
 interface Props {
@@ -25,14 +26,25 @@ const {
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
+    <script is:inline>
+      // Avoid the intro overlay flashing on repeat visits within a session.
+      try {
+        if (sessionStorage.getItem('statsmec:intro-shown') === '1') {
+          document.documentElement.classList.add('intro-skip');
+        }
+      } catch (e) {
+        /* no-op */
+      }
+    </script>
   </head>
   <body class="antialiased text-game-primary">
+    <IntroLoader game={game} />
     <div class="app-bg-decoration" aria-hidden="true"></div>
     <slot />
     <Footer game={game} />

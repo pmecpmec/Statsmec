@@ -9,7 +9,10 @@ const { headline = 'Overview' } = Astro.props;
 <header
   class="sticky top-0 z-50 flex items-center justify-between border-b border-game bg-game-card/90 px-6 py-4 backdrop-blur-md md:px-8"
 >
-  <h1 class="font-display text-lg font-semibold tracking-tight text-game-primary md:text-xl">{headline}</h1>
+  <div class="flex items-center gap-3">
+    <span class="font-mono text-sm font-bold text-game-accent" aria-hidden="true">//</span>
+    <h1 class="font-display text-lg font-semibold uppercase tracking-tight text-game-primary md:text-xl">{headline}</h1>
+  </div>
   <div class="flex items-center gap-3 md:gap-4">
     <a
       href="https://pmec.dev"

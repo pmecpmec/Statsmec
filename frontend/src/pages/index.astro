@@ -25,15 +25,15 @@ const API = import.meta.env.PUBLIC_API_URL ?? 'http://127.0.0.1:8000/api/v1';
 
     <section id="dashboard" class="bg-game-primary px-4 py-8 md:px-8">
       <div class="mx-auto grid max-w-7xl gap-6 lg:grid-cols-3">
-        <div class="glass-card reveal">
-          <h2 class="section-title-accent mb-4 font-display text-xl font-semibold text-game-primary">Performance</h2>
+        <div class="glass-card hud-rail hud-rail-ct reveal pl-7">
+          <h2 class="section-title-accent mb-4 font-display text-xl font-semibold uppercase tracking-tight text-game-primary">Performance</h2>
           <PerformanceChart client:load apiUrl={API} />
         </div>
-        <div class="glass-card reveal stagger-1">
-          <h2 class="section-title-accent mb-4 font-display text-xl font-semibold text-game-primary">Match history</h2>
+        <div class="glass-card hud-rail reveal stagger-1 pl-7">
+          <h2 class="section-title-accent mb-4 font-display text-xl font-semibold uppercase tracking-tight text-game-primary">Match history</h2>
           <MatchHistory client:load apiUrl={API} compact={true} maxRows={10} />
         </div>
-        <div class="glass-card reveal stagger-2">
+        <div class="glass-card hud-rail hud-rail-t reveal stagger-2 pl-7">
           <WeaponBreakdown client:load apiUrl={API} />
         </div>
       </div>
@@ -41,9 +41,12 @@ const API = import.meta.env.PUBLIC_API_URL ?? 'http://127.0.0.1:8000/api/v1';
 
     <section id="highlights" class="border-t border-game bg-game-secondary/50 px-4 py-16 md:px-8">
       <div class="mx-auto max-w-6xl px-1">
-        <h2 class="section-title-accent reveal mb-8 text-center font-display text-3xl font-semibold text-game-primary md:mb-10 md:text-4xl">
-          Highlights
-        </h2>
+        <div class="reveal mb-8 flex flex-col items-center md:mb-10">
+          <span class="section-kicker mb-2">Allstar reel</span>
+          <h2 class="section-title-accent text-center font-display text-3xl font-bold uppercase tracking-tight text-game-primary md:text-4xl">
+            Highlights
+          </h2>
+        </div>
         <div class="glass-card reveal stagger-1">
           <Highlights client:load apiUrl={API} limit={12} />
         </div>
@@ -52,9 +55,12 @@ const API = import.meta.env.PUBLIC_API_URL ?? 'http://127.0.0.1:8000/api/v1';
 
     <section id="stats" class="bg-game-primary px-4 py-16 md:px-8">
       <div class="mx-auto max-w-6xl px-1">
-        <h2 class="section-title-accent reveal mb-8 text-center font-display text-3xl font-semibold text-game-primary md:mb-10 md:text-4xl">
-          More stats
-        </h2>
+        <div class="reveal mb-8 flex flex-col items-center md:mb-10">
+          <span class="section-kicker mb-2">Career totals</span>
+          <h2 class="section-title-accent text-center font-display text-3xl font-bold uppercase tracking-tight text-game-primary md:text-4xl">
+            More stats
+          </h2>
+        </div>
         <div class="glass-card reveal stagger-1 mx-auto max-w-xl">
           <ClassicStats client:load apiUrl={API} />
         </div>
@@ -63,9 +69,12 @@ const API = import.meta.env.PUBLIC_API_URL ?? 'http://127.0.0.1:8000/api/v1';
 
     <section id="settings" class="border-t border-game bg-game-secondary/30 px-4 py-16 md:px-8">
       <div class="mx-auto max-w-6xl px-1">
-        <h2 class="section-title-accent reveal mb-8 text-center font-display text-3xl font-semibold text-game-primary md:mb-10 md:text-4xl">
-          Game settings
-        </h2>
+        <div class="reveal mb-8 flex flex-col items-center md:mb-10">
+          <span class="section-kicker mb-2">Config &amp; loadout</span>
+          <h2 class="section-title-accent text-center font-display text-3xl font-bold uppercase tracking-tight text-game-primary md:text-4xl">
+            Game settings
+          </h2>
+        </div>
 
         <div class="grid gap-6 md:grid-cols-3">
           <div class="glass-card reveal stagger-1">
@@ -183,9 +192,12 @@ const API = import.meta.env.PUBLIC_API_URL ?? 'http://127.0.0.1:8000/api/v1';
 
     <section id="matches" class="border-t border-game bg-game-secondary/40 px-4 py-16 md:px-8">
       <div class="mx-auto max-w-6xl px-1">
-        <h2 class="section-title-accent reveal mb-8 text-center font-display text-3xl font-semibold text-game-primary md:mb-10 md:text-4xl">
-          Match details
-        </h2>
+        <div class="reveal mb-8 flex flex-col items-center md:mb-10">
+          <span class="section-kicker mb-2">Scoreboard</span>
+          <h2 class="section-title-accent text-center font-display text-3xl font-bold uppercase tracking-tight text-game-primary md:text-4xl">
+            Match details
+          </h2>
+        </div>
         <p class="reveal stagger-1 mb-6 text-center text-sm text-game-muted">
           Select a row to load scoreboard and round breakdown.
         </p>

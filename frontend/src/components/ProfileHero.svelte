@@ -50,9 +50,14 @@
 
 <section id="overview" class="px-4 pb-8 pt-6 md:px-8 md:pb-10 md:pt-8">
   <div
-    class="relative mx-auto max-w-4xl overflow-hidden border border-game bg-game-card px-6 py-10 md:px-12 md:py-12"
+    class="hud-panel relative mx-auto max-w-4xl overflow-hidden border border-game bg-game-card px-6 py-10 md:px-12 md:py-12"
     style="border-radius: var(--radius-hero);"
   >
+    <!-- CT vs T top split rail -->
+    <div class="absolute inset-x-0 top-0 flex h-[3px]" aria-hidden="true">
+      <span class="h-full flex-1" style="background: linear-gradient(90deg, var(--ct-bright), transparent);"></span>
+      <span class="h-full flex-1" style="background: linear-gradient(90deg, transparent, var(--t-bright));"></span>
+    </div>
     <div class="hero-waves" aria-hidden="true">
       <svg viewBox="0 0 1440 320" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
         <path
@@ -64,8 +69,12 @@
     </div>
 
     <div class="relative flex flex-col items-center gap-8">
+      <span class="section-kicker reveal">Operator dossier</span>
       <div class="relative reveal">
-        <div class="animate-glow rounded-full p-[3px]" style="background: var(--accent); box-shadow: var(--avatar-glow, none);">
+        <div
+          class="animate-glow rounded-full p-[2px]"
+          style="background: conic-gradient(from 220deg, var(--ct-bright), var(--accent) 45%, var(--t-bright) 75%, var(--ct-bright)); box-shadow: var(--avatar-glow, none);"
+        >
           <div class="rounded-full bg-game-card p-[3px]">
             <img
               src={profile?.avatar_url ??
@@ -79,15 +88,15 @@
           class="absolute -bottom-1 left-1/2 flex -translate-x-1/2 flex-col items-center border border-game bg-game-secondary px-3 py-1 text-center"
           style="border-radius: calc(var(--radius-card) - 2px);"
         >
-          <span class="text-lg font-bold leading-none text-game-accent">
+          <span class="font-mono text-lg font-bold leading-none text-game-accent">
             {profile?.faceit_level ?? 10}
           </span>
-          <span class="text-[0.65rem] font-medium uppercase tracking-wider text-game-muted">FACEIT</span>
+          <span class="text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-game-muted">FACEIT</span>
         </div>
       </div>
 
       <div class="reveal stagger-1 flex w-full max-w-xl flex-col items-center gap-5 text-center">
-        <h1 class="font-display text-3xl font-semibold tracking-tight text-game-primary md:text-4xl">
+        <h1 class="font-display text-4xl font-bold uppercase tracking-tight text-game-primary md:text-5xl">
           {displayName}
         </h1>
         <LiveStatus
@@ -161,19 +170,19 @@
 
         <div class="grid w-full max-w-md grid-cols-3 gap-2 pt-2 md:gap-3">
           <div class="stat-card">
-            <span class="text-[0.65rem] font-semibold uppercase tracking-wider text-game-muted">Win rate</span>
+            <span class="hud-label">Win rate</span>
             <span class="font-mono text-xl font-bold text-game-accent md:text-2xl">
               {profile ? `${profile.win_rate.toFixed(1)}%` : '—'}
             </span>
           </div>
           <div class="stat-card">
-            <span class="text-[0.65rem] font-semibold uppercase tracking-wider text-game-muted">K/D</span>
+            <span class="hud-label">K/D</span>
             <span class="font-mono text-xl font-bold text-game-primary md:text-2xl">
               {profile ? profile.overall_kd.toFixed(2) : '—'}
             </span>
           </div>
           <div class="stat-card">
-            <span class="text-[0.65rem] font-semibold uppercase tracking-wider text-game-muted">HS%</span>
+            <span class="hud-label">HS%</span>
             <span class="font-mono text-xl font-bold text-game-accent md:text-2xl">
               {profile ? `${profile.headshot_pct.toFixed(0)}%` : '—'}
             </span>
@@ -183,15 +192,15 @@
         {#if profile?.favorite_map || profile?.favorite_weapon}
           <div class="grid w-full max-w-lg grid-cols-1 gap-2 sm:grid-cols-2">
             {#if profile?.favorite_map}
-              <div class="border border-game bg-game-muted px-4 py-3 text-center" style="border-radius: var(--radius-card);">
-                <span class="text-xs font-semibold uppercase tracking-wider text-game-muted">Top map</span>
-                <span class="mt-1 block font-display text-lg font-semibold text-game-accent">{profile.favorite_map}</span>
+              <div class="hud-rail hud-rail-ct border border-game bg-game-muted px-4 py-3 pl-5 text-left" style="border-radius: var(--radius-card);">
+                <span class="hud-label">Top map</span>
+                <span class="mt-1 block font-display text-lg font-semibold text-ct">{profile.favorite_map}</span>
               </div>
             {/if}
             {#if profile?.favorite_weapon}
-              <div class="border border-game bg-game-muted px-4 py-3 text-center" style="border-radius: var(--radius-card);">
-                <span class="text-xs font-semibold uppercase tracking-wider text-game-muted">Top weapon</span>
-                <span class="mt-1 block font-display text-lg font-semibold text-game-accent"
+              <div class="hud-rail hud-rail-t border border-game bg-game-muted px-4 py-3 pl-5 text-left" style="border-radius: var(--radius-card);">
+                <span class="hud-label">Top weapon</span>
+                <span class="mt-1 block font-display text-lg font-semibold text-t"
                   >{profile.favorite_weapon}</span
                 >
               </div>

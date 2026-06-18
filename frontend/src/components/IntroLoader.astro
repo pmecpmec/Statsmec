@@ -1,0 +1,70 @@
+---
+/**
+ * Tactical "round start" intro overlay (CT vs T for CS2, ATK vs DEF for Valorant).
+ * - Static markup so it renders instantly with SSR/static builds (no hydration).
+ * - Shows once per browser session (sessionStorage) and honors prefers-reduced-motion.
+ * - A head-level inline script (in MainLayout) adds `intro-skip` to <html> on repeat
+ *   visits to avoid any flash before this orchestration script runs.
+ */
+interface Props {
+  game?: 'cs2' | 'valorant';
+}
+const { game = 'cs2' } = Astro.props;
+const sides = game === 'valorant' ? { left: 'ATK', right: 'DEF' } : { left: 'CT', right: 'T' };
+const tagline = game === 'valorant' ? 'Valorant · performance' : 'Counter-Strike 2 · performance';
+---
+
+<div id="intro-loader" role="presentation" aria-hidden="true">
+  <div class="intro-sides">
+    <div class="intro-side intro-side-ct"></div>
+    <div class="intro-side intro-side-t"></div>
+  </div>
+  <div class="intro-grid"></div>
+
+  <div class="intro-content">
+    <div class="intro-badges">
+      <span class="intro-side-tag ct">{sides.left}</span>
+      <span class="intro-vs">VS</span>
+      <span class="intro-side-tag t">{sides.right}</span>
+    </div>
+    <div class="intro-logo">STATS<span>MEC</span></div>
+    <p class="intro-tagline">{tagline}</p>
+    <div class="intro-bar"><span class="intro-bar-fill"></span></div>
+    <p class="intro-status">Loading match data…</p>
+  </div>
+</div>
+
+<script is:inline>
+  (() => {
+    const KEY = 'statsmec:intro-shown';
+    const loader = document.getElementById('intro-loader');
+    if (!loader) return;
+
+    const finish = () => {
+      loader.classList.add('intro-done');
+      const cleanup = () => loader.remove();
+      loader.addEventListener('transitionend', cleanup, { once: true });
+      // Fallback in case transitionend never fires.
+      window.setTimeout(cleanup, 900);
+    };
+
+    let seen = false;
+    try {
+      seen = sessionStorage.getItem(KEY) === '1';
+      sessionStorage.setItem(KEY, '1');
+    } catch {
+      /* storage unavailable — just show it */
+    }
+
+    if (seen) {
+      loader.remove();
+      return;
+    }
+
+    const reduce =
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const hold = reduce ? 350 : 2050;
+    window.setTimeout(finish, hold);
+  })();
+</script>

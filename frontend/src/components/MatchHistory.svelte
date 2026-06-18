@@ -79,11 +79,11 @@
   }
 
   function killClass(k: number | null): string {
-    return (k ?? 0) > 0 ? 'px-2 py-1.5 font-semibold text-emerald-700' : 'px-2 py-1.5';
+    return (k ?? 0) > 0 ? 'px-2 py-1.5 font-semibold text-win' : 'px-2 py-1.5';
   }
 
   function deathClass(d: number | null): string {
-    return (d ?? 0) > 0 ? 'px-2 py-1.5 text-red-600' : 'px-2 py-1.5';
+    return (d ?? 0) > 0 ? 'px-2 py-1.5 text-loss' : 'px-2 py-1.5';
   }
 
   function resultLabel(res: string | null): string {
@@ -104,6 +104,11 @@
   }
 
   function roundResultClass(res: string | null): string {
+    const v = (res ?? '').toLowerCase();
+    if (v === 'ct')
+      return 'inline-flex rounded-md border border-ct bg-[var(--ct-soft)] px-2 py-0.5 font-mono text-xs font-bold text-ct';
+    if (v === 't')
+      return 'inline-flex rounded-md border-t-side bg-[var(--t-soft)] px-2 py-0.5 font-mono text-xs font-bold text-t';
     if (res)
       return 'inline-flex rounded-md border border-game bg-game-muted px-2 py-0.5 text-xs font-semibold text-game-primary';
     return 'text-sm text-game-muted';
@@ -186,7 +191,7 @@
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
-        <tr class="border-b border-game text-xs font-medium uppercase tracking-wider text-game-muted">
+        <tr class="hud-label border-b border-game">
           {#if !compact}
             <th class="px-3 py-3 text-left">When</th>
           {/if}
@@ -211,15 +216,15 @@
             <td class="px-3 py-2.5">
               <span class="inline-flex items-center gap-2 font-medium text-game-primary">
                 <span
-                  class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-game-muted text-xs text-game-muted"
+                  class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-game bg-game-muted text-xs text-game-accent"
                   aria-hidden="true"
                   >⌖</span
                 >
                 {mapDisplay(m.map_name)}
               </span>
             </td>
-            <td class="px-3 py-2.5 font-medium text-game-primary">
-              <span class={m.result === 'win' ? 'text-emerald-700' : 'text-red-600'}>{m.score_team ?? '-'}</span>
+            <td class="px-3 py-2.5 font-mono font-semibold text-game-primary">
+              <span class={m.result === 'win' ? 'text-win' : m.result === 'loss' ? 'text-loss' : 'text-game-primary'}>{m.score_team ?? '-'}</span>
               <span class="mx-1 text-game-muted/50">:</span>
               <span class="text-game-muted">{m.score_opponent ?? '-'}</span>
             </td>
@@ -271,7 +276,7 @@
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="border-b border-game text-xs font-medium uppercase tracking-wider text-game-muted">
+              <tr class="hud-label border-b border-game">
                 <th class="text-left py-2 px-2">#</th>
                 <th class="text-left py-2 px-2">Result</th>
                 <th class="text-left py-2 px-2">K</th>
