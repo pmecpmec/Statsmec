@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -15,11 +17,32 @@ from app.services.auto_sync import start_auto_sync, stop_auto_sync
 from app.services.cache import ensure_cache_ready, get_redis_client
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):  # pragma: no cover - simple wiring
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    await ensure_cache_ready()
+    start_auto_sync()
+
+    yield
+
+    stop_auto_sync()
+    await steam_client.aclose()
+    await faceit_client.aclose()
+    await riot_account_client.aclose()
+    await valorant_client.aclose()
+    try:
+        await get_redis_client().aclose()
+    except Exception:
+        pass
+
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Statsmec API",
         version="0.1.0",
         description="Backend API for the Statsmec Counter-Strike analytics dashboard.",
+        lifespan=lifespan,
     )
 
     app.add_middleware(
@@ -29,25 +52,6 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-    @app.on_event("startup")
-    async def on_startup() -> None:  # pragma: no cover - simple wiring
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        await ensure_cache_ready()
-        start_auto_sync()
-
-    @app.on_event("shutdown")
-    async def on_shutdown() -> None:  # pragma: no cover - simple wiring
-        stop_auto_sync()
-        await steam_client.aclose()
-        await faceit_client.aclose()
-        await riot_account_client.aclose()
-        await valorant_client.aclose()
-        try:
-            await get_redis_client().aclose()
-        except Exception:
-            pass
 
     app.include_router(api_router, prefix="/api/v1")
 

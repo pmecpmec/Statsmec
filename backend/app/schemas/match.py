@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class WeaponStatDetail(BaseModel):
@@ -22,8 +22,7 @@ class RoundDetail(BaseModel):
     weapon_used: str | None
     weapon_stats: List[WeaponStatDetail] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PlayerScore(BaseModel):
@@ -37,8 +36,7 @@ class PlayerScore(BaseModel):
     headshot_pct: float
     rating: float
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Scoreboard(BaseModel):

@@ -2,7 +2,7 @@ from functools import lru_cache
 from typing import List
 
 from pydantic import Field
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 PMEC_STEAM_ID = "76561198245080640"
@@ -57,9 +57,7 @@ class Settings(BaseSettings):
 
     BACKEND_CORS_ORIGINS: List[str] = Field(default=["*"])
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
     @property
     def sync_database_uri(self) -> str:
