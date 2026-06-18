@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
+from urllib.parse import quote
 
 import asyncio
 import random
@@ -56,6 +57,27 @@ class RateLimitedClient:
 
 steam_client = RateLimitedClient("https://api.steampowered.com")
 faceit_client = RateLimitedClient("https://open.faceit.com/data/v4")
+
+
+def _riot_routing_host() -> str:
+    r = (settings.RIOT_ROUTING_REGION or "europe").strip().lower()
+    if r not in ("americas", "europe", "asia"):
+        r = "europe"
+    return f"https://{r}.api.riotgames.com"
+
+
+def _valorant_shard_host() -> str:
+    s = (settings.RIOT_VAL_SHARD or "eu").strip().lower()
+    return f"https://{s}.api.riotgames.com"
+
+
+riot_account_client = RateLimitedClient(_riot_routing_host())
+valorant_client = RateLimitedClient(_valorant_shard_host())
+
+
+def _riot_headers() -> Dict[str, str]:
+    key = (settings.RIOT_API_KEY or "").strip()
+    return {"X-Riot-Token": key}
 
 
 async def fetch_steam_match_history(steam_id: str, limit: int = 20) -> Dict[str, Any]:
@@ -148,6 +170,112 @@ async def fetch_faceit_rank_averages(game: str = "cs2") -> Optional[Dict[str, An
     headers = {"Authorization": f"Bearer {settings.FACEIT_API_KEY}"}
     # This is illustrative; you may need a different endpoint for real rank statistics.
     resp = await faceit_client.get("/stats/ranks", headers=headers, params={"game": game})
+    if resp.status_code == 404:
+        return None
+    resp.raise_for_status()
+    return resp.json()
+
+
+async def fetch_riot_account_by_riot_id(
+    game_name: str, tag_line: str
+) -> Optional[Dict[str, Any]]:
+    """
+    Resolve Riot ID (gameName + tagLine) to account JSON (puuid, gameName, tagLine).
+    Uses regional routing host (americas / europe / asia).
+    """
+    if not settings.RIOT_API_KEY:
+        return None
+    gn = quote(game_name.strip(), safe="")
+    tag = quote(tag_line.strip(), safe="")
+    if not gn or not tag:
+        return None
+    resp = await riot_account_client.get(
+        f"/riot/account/v1/accounts/by-riot-id/{gn}/{tag}",
+        headers=_riot_headers(),
+    )
+    if resp.status_code in (404, 400):
+        return None
+    resp.raise_for_status()
+    return resp.json()
+
+
+async def fetch_valorant_matchlist(
+    puuid: str, start: int = 0, count: int = 20
+) -> Optional[Dict[str, Any]]:
+    """
+    Recent Valorant competitive / unrated match IDs for a PUUID (shard-specific host).
+    """
+    if not settings.RIOT_API_KEY:
+        return None
+    puuid_enc = quote(puuid.strip(), safe="")
+    if not puuid_enc:
+        return None
+    params = {"start": start, "count": min(max(count, 1), 50)}
+    resp = await valorant_client.get(
+        f"/val/match/v1/matchlists/by-puuid/{puuid_enc}",
+        headers=_riot_headers(),
+        params=params,
+    )
+    if resp.status_code == 404:
+        return None
+    resp.raise_for_status()
+    return resp.json()
+
+
+async def fetch_valorant_match(match_id: str) -> Optional[Dict[str, Any]]:
+    if not settings.RIOT_API_KEY:
+        return None
+    mid = quote(match_id.strip(), safe="")
+    if not mid:
+        return None
+    resp = await valorant_client.get(
+        f"/val/match/v1/matches/{mid}",
+        headers=_riot_headers(),
+    )
+    if resp.status_code == 404:
+        return None
+    resp.raise_for_status()
+    return resp.json()
+
+
+async def fetch_valorant_content(locale: str | None = None) -> Dict[str, Any]:
+    """
+    val-content-v1: maps, agents, competitive tiers, etc. Same regional host as match-v1.
+    Omit *locale* for all localizations; invalid locale returns 400 from Riot.
+    """
+    params: Dict[str, str] = {}
+    if locale and locale.strip():
+        params["locale"] = locale.strip()
+    resp = await valorant_client.get(
+        "/val/content/v1/contents",
+        headers=_riot_headers(),
+        params=params or None,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+async def fetch_valorant_platform_status() -> Dict[str, Any]:
+    """val-status-v1: maintenance / incident style platform data for Valorant."""
+    resp = await valorant_client.get(
+        "/val/status/v1/platform-data",
+        headers=_riot_headers(),
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+async def fetch_valorant_leaderboard_by_act(act_id: str) -> Optional[Dict[str, Any]]:
+    """
+    val-ranked-v1: act leaderboard. Rate limit is tight (10 req / 10s); cache in callers if needed.
+    """
+    aid = quote(act_id.strip(), safe="")
+    if not aid:
+        return None
+    resp = await valorant_client.get(
+        f"/val/ranked/v1/leaderboards/by-act/{aid}",
+        headers=_riot_headers(),
+    )
     if resp.status_code == 404:
         return None
     resp.raise_for_status()

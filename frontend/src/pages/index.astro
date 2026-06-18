@@ -1,5 +1,7 @@
 ---
 import MainLayout from '../layouts/MainLayout.astro';
+import AppSidebar from '../components/AppSidebar.astro';
+import DashboardTopBar from '../components/DashboardTopBar.astro';
 import ProfileHero from '../components/ProfileHero.svelte';
 import MatchHistory from '../components/MatchHistory.svelte';
 import PerformanceChart from '../components/PerformanceChart.svelte';
@@ -10,181 +12,187 @@ import ClassicStats from '../components/ClassicStats.svelte';
 const API = import.meta.env.PUBLIC_API_URL ?? 'http://127.0.0.1:8000/api/v1';
 ---
 
-<MainLayout>
-  <!-- Hero / Profile (dynamic from API) -->
-  <ProfileHero client:load apiUrl={API} />
+<MainLayout
+  game="cs2"
+  title="Statsmec — CS2"
+  description="Counter-Strike 2 stats, settings and match history for pmec."
+>
+  <AppSidebar game="cs2" />
+  <div class="flex min-h-screen flex-col md:pl-[4.25rem]">
+    <DashboardTopBar headline="CS2 overview" />
 
-  <!-- Highlights -->
-  <section id="highlights" class="py-20" style="background: var(--bg-secondary);">
-    <div class="max-w-6xl mx-auto px-5">
-      <h2 class="section-title reveal">Highlights</h2>
-      <div class="glass-card reveal stagger-1">
-        <Highlights client:load apiUrl={API} limit={12} />
-      </div>
-    </div>
-  </section>
+    <ProfileHero client:load apiUrl={API} />
 
-  <!-- Stats Detail -->
-  <section id="stats" class="py-20" style="background: var(--bg-secondary);">
-    <div class="max-w-6xl mx-auto px-5">
-      <h2 class="section-title reveal">Performance</h2>
-      <div class="grid md:grid-cols-3 gap-6">
-        <div class="glass-card reveal stagger-1">
+    <section id="dashboard" class="bg-game-primary px-4 py-8 md:px-8">
+      <div class="mx-auto grid max-w-7xl gap-6 lg:grid-cols-3">
+        <div class="glass-card reveal">
+          <h2 class="section-title-accent mb-4 font-display text-xl font-semibold text-game-primary">Performance</h2>
           <PerformanceChart client:load apiUrl={API} />
+        </div>
+        <div class="glass-card reveal stagger-1">
+          <h2 class="section-title-accent mb-4 font-display text-xl font-semibold text-game-primary">Match history</h2>
+          <MatchHistory client:load apiUrl={API} compact={true} maxRows={10} />
         </div>
         <div class="glass-card reveal stagger-2">
           <WeaponBreakdown client:load apiUrl={API} />
         </div>
-        <div class="glass-card reveal stagger-3">
+      </div>
+    </section>
+
+    <section id="highlights" class="border-t border-game bg-game-secondary/50 px-4 py-16 md:px-8">
+      <div class="mx-auto max-w-6xl px-1">
+        <h2 class="section-title-accent reveal mb-8 text-center font-display text-3xl font-semibold text-game-primary md:mb-10 md:text-4xl">
+          Highlights
+        </h2>
+        <div class="glass-card reveal stagger-1">
+          <Highlights client:load apiUrl={API} limit={12} />
+        </div>
+      </div>
+    </section>
+
+    <section id="stats" class="bg-game-primary px-4 py-16 md:px-8">
+      <div class="mx-auto max-w-6xl px-1">
+        <h2 class="section-title-accent reveal mb-8 text-center font-display text-3xl font-semibold text-game-primary md:mb-10 md:text-4xl">
+          More stats
+        </h2>
+        <div class="glass-card reveal stagger-1 mx-auto max-w-xl">
           <ClassicStats client:load apiUrl={API} />
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Settings Section -->
-  <section id="settings" class="py-20">
-    <div class="max-w-6xl mx-auto px-5">
-      <h2 class="section-title reveal">Game Settings</h2>
+    <section id="settings" class="border-t border-game bg-game-secondary/30 px-4 py-16 md:px-8">
+      <div class="mx-auto max-w-6xl px-1">
+        <h2 class="section-title-accent reveal mb-8 text-center font-display text-3xl font-semibold text-game-primary md:mb-10 md:text-4xl">
+          Game settings
+        </h2>
 
-      <div class="grid md:grid-cols-3 gap-6">
-        <!-- Mouse -->
+        <div class="grid gap-6 md:grid-cols-3">
+          <div class="glass-card reveal stagger-1">
+            <h3 class="mb-4 font-display text-lg font-semibold text-game-accent">Mouse</h3>
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between"><span class="text-game-muted">DPI</span><span class="font-semibold text-game-primary">1600</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">Sensitivity</span><span class="font-semibold text-game-primary">0.0325</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">eDPI</span><span class="font-semibold text-game-accent">52</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">Zoom sens</span><span class="font-semibold text-game-primary">1.0</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">Polling rate</span><span class="font-semibold text-game-primary">1000 Hz</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">m_yaw</span><span class="font-mono font-semibold text-game-primary">0.022</span></div>
+            </div>
+          </div>
+
+          <div class="glass-card reveal stagger-2">
+            <h3 class="mb-4 font-display text-lg font-semibold text-game-accent">Video</h3>
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between"><span class="text-game-muted">Resolution</span><span class="font-semibold text-game-primary">1280×960</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">Aspect ratio</span><span class="font-semibold text-game-primary">4:3 stretched</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">Refresh rate</span><span class="font-semibold text-game-primary">240 Hz</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">Display mode</span><span class="font-semibold text-game-primary">Fullscreen</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">Brightness</span><span class="font-semibold text-game-primary">93%</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">V-Sync</span><span class="font-semibold text-cs-red">Off</span></div>
+            </div>
+          </div>
+
+          <div class="glass-card reveal stagger-3">
+            <h3 class="mb-4 font-display text-lg font-semibold text-game-accent">Crosshair</h3>
+            <div class="mb-4 flex items-center justify-center bg-game-muted p-6" style="border-radius: var(--radius-card);">
+              <div class="relative flex h-20 w-20 items-center justify-center">
+                <div class="absolute left-1/2 top-[-4px] h-3 w-0.5 -translate-x-1/2 bg-game-primary"></div>
+                <div class="absolute bottom-[-4px] left-1/2 h-3 w-0.5 -translate-x-1/2 bg-game-primary"></div>
+                <div class="absolute left-[-4px] top-1/2 h-0.5 w-3 -translate-y-1/2 bg-game-primary"></div>
+                <div class="absolute right-[-4px] top-1/2 h-0.5 w-3 -translate-y-1/2 bg-game-primary"></div>
+                <div class="h-1 w-1 rounded-full bg-game-primary"></div>
+              </div>
+            </div>
+            <div class="text-center">
+              <code class="inline-block select-all break-all border border-game bg-game-secondary px-3 py-1.5 font-mono text-xs text-game-muted" style="border-radius: var(--radius-card);">
+                cl_crosshaircolor_r 0; cl_crosshaircolor_g 0; cl_crosshaircolor_b 0;
+                cl_crosshairsize 1.5; cl_crosshairthickness 1; cl_crosshairgap -5
+              </code>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 grid gap-6 md:grid-cols-2">
+          <div class="glass-card reveal stagger-4">
+            <h3 class="mb-4 font-display text-lg font-semibold text-game-accent">Advanced video</h3>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between"><span class="text-game-muted">Anti-aliasing</span><span class="font-semibold text-game-primary">4× MSAA</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">Shadow quality</span><span class="font-semibold text-game-primary">High</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">Model / texture</span><span class="font-semibold text-game-primary">Low</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">Texture filtering</span><span class="font-semibold text-game-primary">Anisotropic 4×</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">Shader detail</span><span class="font-semibold text-game-primary">High</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">Particle detail</span><span class="font-semibold text-game-primary">Low</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">Ambient occlusion</span><span class="font-semibold text-game-primary">High</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">HDR</span><span class="font-semibold text-game-primary">Quality</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">FSR</span><span class="font-semibold text-cs-red">Disabled</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">NVIDIA Reflex</span><span class="font-semibold text-cs-green">Enabled + boost</span></div>
+              <div class="flex justify-between"><span class="text-game-muted">Boost contrast</span><span class="font-semibold text-cs-red">Disabled</span></div>
+            </div>
+          </div>
+
+          <div class="glass-card reveal stagger-5">
+            <h3 class="mb-4 font-display text-lg font-semibold text-game-accent">Config</h3>
+            <div class="space-y-4">
+              <div>
+                <span class="mb-1 block text-xs font-medium uppercase tracking-wider text-game-muted">Launch options</span>
+                <code class="block select-all border border-game bg-game-secondary px-3 py-2 text-sm text-game-primary" style="border-radius: var(--radius-card);">
+                  -tickrate 128 -novid +exec autoexec.cfg
+                </code>
+              </div>
+              <div>
+                <span class="mb-1 block text-xs font-medium uppercase tracking-wider text-game-muted">Viewmodel</span>
+                <code class="block select-all border border-game bg-game-secondary px-3 py-2 text-sm text-game-primary" style="border-radius: var(--radius-card);">
+                  viewmodel_fov 68; viewmodel_offset_x 2.5; viewmodel_offset_z -1.5
+                </code>
+              </div>
+              <div>
+                <span class="mb-1 block text-xs font-medium uppercase tracking-wider text-game-muted">HUD</span>
+                <code class="block select-all border border-game bg-game-secondary px-3 py-2 text-sm text-game-primary" style="border-radius: var(--radius-card);">
+                  hud_scaling 0.95; cl_hud_color 3; cl_showloadout true
+                </code>
+              </div>
+              <div>
+                <span class="mb-1 block text-xs font-medium uppercase tracking-wider text-game-muted">Radar</span>
+                <code class="block select-all border border-game bg-game-secondary px-3 py-2 text-sm text-game-primary" style="border-radius: var(--radius-card);">
+                  cl_radar_scale 0.4; cl_radar_always_centered 1; cl_radar_rotate 1
+                </code>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card reveal stagger-6 mt-6">
+          <h3 class="mb-4 font-display text-lg font-semibold text-game-accent">Key binds</h3>
+          <div class="grid grid-cols-2 gap-x-8 gap-y-2 text-sm md:grid-cols-4">
+            <div class="flex justify-between"><span class="text-game-muted">Jump</span><span class="font-mono font-semibold text-game-primary">Space / MWheel↓</span></div>
+            <div class="flex justify-between"><span class="text-game-muted">Drop</span><span class="font-mono font-semibold text-game-primary">F</span></div>
+            <div class="flex justify-between"><span class="text-game-muted">Inspect</span><span class="font-mono font-semibold text-game-primary">Q</span></div>
+            <div class="flex justify-between"><span class="text-game-muted">Medi-shot</span><span class="font-mono font-semibold text-game-primary">H</span></div>
+            <div class="flex justify-between"><span class="text-game-muted">HE grenade</span><span class="font-mono font-semibold text-game-primary">6 / G</span></div>
+            <div class="flex justify-between"><span class="text-game-muted">Flash</span><span class="font-mono font-semibold text-game-primary">7 / C</span></div>
+            <div class="flex justify-between"><span class="text-game-muted">Smoke</span><span class="font-mono font-semibold text-game-primary">8 / X</span></div>
+            <div class="flex justify-between"><span class="text-game-muted">Molotov</span><span class="font-mono font-semibold text-game-primary">0 / Z</span></div>
+            <div class="flex justify-between"><span class="text-game-muted">Decoy</span><span class="font-mono font-semibold text-game-primary">9 / O</span></div>
+            <div class="flex justify-between"><span class="text-game-muted">Voice</span><span class="font-mono font-semibold text-game-primary">V</span></div>
+            <div class="flex justify-between"><span class="text-game-muted">Team chat</span><span class="font-mono font-semibold text-game-primary">U</span></div>
+            <div class="flex justify-between"><span class="text-game-muted">All chat</span><span class="font-mono font-semibold text-game-primary">Y</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="matches" class="border-t border-game bg-game-secondary/40 px-4 py-16 md:px-8">
+      <div class="mx-auto max-w-6xl px-1">
+        <h2 class="section-title-accent reveal mb-8 text-center font-display text-3xl font-semibold text-game-primary md:mb-10 md:text-4xl">
+          Match details
+        </h2>
+        <p class="reveal stagger-1 mb-6 text-center text-sm text-game-muted">
+          Select a row to load scoreboard and round breakdown.
+        </p>
         <div class="glass-card reveal stagger-1">
-          <h3 class="text-lg font-bold text-primary-400 mb-4">
-            Mouse
-          </h3>
-          <div class="space-y-3 text-sm">
-            <div class="flex justify-between"><span class="text-zinc-400">DPI</span><span class="font-semibold">1600</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">Sensitivity</span><span class="font-semibold">0.0325</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">eDPI</span><span class="font-semibold text-primary-400">52</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">Zoom Sens</span><span class="font-semibold">1.0</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">Polling Rate</span><span class="font-semibold">1000 Hz</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">m_yaw</span><span class="font-semibold font-mono">0.022</span></div>
-          </div>
-        </div>
-
-        <!-- Video -->
-        <div class="glass-card reveal stagger-2">
-          <h3 class="text-lg font-bold text-primary-400 mb-4">
-            Video
-          </h3>
-          <div class="space-y-3 text-sm">
-            <div class="flex justify-between"><span class="text-zinc-400">Resolution</span><span class="font-semibold">1280x960</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">Aspect Ratio</span><span class="font-semibold">4:3 Stretched</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">Refresh Rate</span><span class="font-semibold">240 Hz</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">Display Mode</span><span class="font-semibold">Fullscreen</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">Brightness</span><span class="font-semibold">93%</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">V-Sync</span><span class="font-semibold text-cs-red">Off</span></div>
-          </div>
-        </div>
-
-        <!-- Crosshair -->
-        <div class="glass-card reveal stagger-3">
-          <h3 class="text-lg font-bold text-primary-400 mb-4">
-            Crosshair
-          </h3>
-          <div class="flex items-center justify-center mb-4 p-6 rounded-xl" style="background: rgba(0,0,0,0.4);">
-            <div class="relative w-20 h-20 flex items-center justify-center">
-              <div class="absolute w-0.5 h-3 bg-black -top-0.5 left-1/2 -translate-x-1/2" style="top:-4px;"></div>
-              <div class="absolute w-0.5 h-3 bg-black -bottom-0.5 left-1/2 -translate-x-1/2" style="bottom:-4px;"></div>
-              <div class="absolute h-0.5 w-3 bg-black -left-0.5 top-1/2 -translate-y-1/2" style="left:-4px;"></div>
-              <div class="absolute h-0.5 w-3 bg-black -right-0.5 top-1/2 -translate-y-1/2" style="right:-4px;"></div>
-              <div class="w-1 h-1 rounded-full bg-black"></div>
-            </div>
-          </div>
-          <div class="text-center">
-            <code class="text-xs text-zinc-400 break-all select-all bg-black/30 px-3 py-1.5 rounded-lg inline-block">
-              cl_crosshaircolor_r 0; cl_crosshaircolor_g 0; cl_crosshaircolor_b 0;
-              cl_crosshairsize 1.5; cl_crosshairthickness 1; cl_crosshairgap -5
-            </code>
-          </div>
+          <MatchHistory client:load apiUrl={API} />
         </div>
       </div>
-
-      <!-- Advanced Video + Viewmodel + Launch Options -->
-      <div class="grid md:grid-cols-2 gap-6 mt-6">
-        <div class="glass-card reveal stagger-4">
-          <h3 class="text-lg font-bold text-primary-400 mb-4">
-            Advanced Video
-          </h3>
-          <div class="space-y-2 text-sm">
-            <div class="flex justify-between"><span class="text-zinc-400">Anti-Aliasing</span><span class="font-semibold">4x MSAA</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">Shadow Quality</span><span class="font-semibold">High</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">Model / Texture</span><span class="font-semibold">Low</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">Texture Filtering</span><span class="font-semibold">Anisotropic 4X</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">Shader Detail</span><span class="font-semibold">High</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">Particle Detail</span><span class="font-semibold">Low</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">Ambient Occlusion</span><span class="font-semibold">High</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">HDR</span><span class="font-semibold">Quality</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">FSR</span><span class="font-semibold text-cs-red">Disabled</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">NVIDIA Reflex</span><span class="font-semibold text-cs-green">Enabled + Boost</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">Boost Contrast</span><span class="font-semibold text-cs-red">Disabled</span></div>
-          </div>
-        </div>
-
-        <div class="glass-card reveal stagger-5">
-          <h3 class="text-lg font-bold text-primary-400 mb-4">
-            Config
-          </h3>
-          <div class="space-y-4">
-            <div>
-              <span class="text-xs uppercase tracking-wider text-zinc-500 block mb-1">Launch Options</span>
-              <code class="text-sm text-zinc-300 bg-black/30 px-3 py-2 rounded-lg block select-all">
-                -tickrate 128 -novid +exec autoexec.cfg
-              </code>
-            </div>
-            <div>
-              <span class="text-xs uppercase tracking-wider text-zinc-500 block mb-1">Viewmodel</span>
-              <code class="text-sm text-zinc-300 bg-black/30 px-3 py-2 rounded-lg block select-all">
-                viewmodel_fov 68; viewmodel_offset_x 2.5; viewmodel_offset_z -1.5
-              </code>
-            </div>
-            <div>
-              <span class="text-xs uppercase tracking-wider text-zinc-500 block mb-1">HUD</span>
-              <code class="text-sm text-zinc-300 bg-black/30 px-3 py-2 rounded-lg block select-all">
-                hud_scaling 0.95; cl_hud_color 3; cl_showloadout true
-              </code>
-            </div>
-            <div>
-              <span class="text-xs uppercase tracking-wider text-zinc-500 block mb-1">Radar</span>
-              <code class="text-sm text-zinc-300 bg-black/30 px-3 py-2 rounded-lg block select-all">
-                cl_radar_scale 0.4; cl_radar_always_centered 1; cl_radar_rotate 1
-              </code>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Key Binds -->
-      <div class="glass-card mt-6 reveal stagger-6">
-        <h3 class="text-lg font-bold text-primary-400 mb-4">
-          Key Binds
-        </h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-2 text-sm">
-          <div class="flex justify-between"><span class="text-zinc-400">Jump</span><span class="font-mono font-semibold">Space / MWheel↓</span></div>
-          <div class="flex justify-between"><span class="text-zinc-400">Drop</span><span class="font-mono font-semibold">F</span></div>
-          <div class="flex justify-between"><span class="text-zinc-400">Inspect</span><span class="font-mono font-semibold">Q</span></div>
-          <div class="flex justify-between"><span class="text-zinc-400">Medi-Shot</span><span class="font-mono font-semibold">H</span></div>
-          <div class="flex justify-between"><span class="text-zinc-400">HE Grenade</span><span class="font-mono font-semibold">6 / G</span></div>
-          <div class="flex justify-between"><span class="text-zinc-400">Flash</span><span class="font-mono font-semibold">7 / C</span></div>
-          <div class="flex justify-between"><span class="text-zinc-400">Smoke</span><span class="font-mono font-semibold">8 / X</span></div>
-          <div class="flex justify-between"><span class="text-zinc-400">Molotov</span><span class="font-mono font-semibold">0 / Z</span></div>
-          <div class="flex justify-between"><span class="text-zinc-400">Decoy</span><span class="font-mono font-semibold">9 / O</span></div>
-          <div class="flex justify-between"><span class="text-zinc-400">Voice</span><span class="font-mono font-semibold">V</span></div>
-          <div class="flex justify-between"><span class="text-zinc-400">Team Chat</span><span class="font-mono font-semibold">U</span></div>
-          <div class="flex justify-between"><span class="text-zinc-400">All Chat</span><span class="font-mono font-semibold">Y</span></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Matches -->
-  <section id="matches" class="py-20" style="background: var(--bg-secondary);">
-    <div class="max-w-6xl mx-auto px-5">
-      <h2 class="section-title reveal">Recent Matches</h2>
-      <div class="glass-card reveal stagger-1">
-        <MatchHistory client:load apiUrl={API} />
-      </div>
-    </div>
-  </section>
+    </section>
+  </div>
 </MainLayout>

@@ -1,8 +1,13 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import Scoreboard from './Scoreboard.svelte';
+  import { showDevSetupHints } from '../lib/devHints';
 
-  let { apiUrl = 'http://127.0.0.1:8000/api/v1' } = $props();
+  let {
+    apiUrl = 'http://127.0.0.1:8000/api/v1',
+    compact = false,
+    maxRows = 20,
+  } = $props();
 
   type Match = {
     id: number;
@@ -63,17 +68,45 @@
   }
 
   function rowClass(id: number): string {
-    const base = 'border-b border-white border-opacity-5 cursor-pointer transition-colors';
-    if (id === selectedId) return base + ' bg-purple-900 border-l-2 border-l-purple-500';
-    return base + ' hover:bg-purple-950';
+    if (compact) {
+      const base = 'border-b border-game transition-colors';
+      if (id === selectedId) return base + ' bg-[var(--accent-soft)]/50';
+      return base + ' hover:bg-game-muted/40';
+    }
+    const base = 'cursor-pointer border-b border-game transition-colors';
+    if (id === selectedId) return base + ' border-l-2 border-l-[var(--accent)] bg-[var(--accent-soft)]/40';
+    return base + ' hover:bg-game-muted/40';
   }
 
   function killClass(k: number | null): string {
-    return (k ?? 0) > 0 ? 'py-1.5 px-2 text-green-400 font-semibold' : 'py-1.5 px-2';
+    return (k ?? 0) > 0 ? 'px-2 py-1.5 font-semibold text-emerald-700' : 'px-2 py-1.5';
   }
 
   function deathClass(d: number | null): string {
-    return (d ?? 0) > 0 ? 'py-1.5 px-2 text-red-400' : 'py-1.5 px-2';
+    return (d ?? 0) > 0 ? 'px-2 py-1.5 text-red-600' : 'px-2 py-1.5';
+  }
+
+  function resultLabel(res: string | null): string {
+    if (!res) return '-';
+    const v = res.toLowerCase();
+    if (v === 'win') return 'W';
+    if (v === 'loss') return 'L';
+    if (v === 'ct') return 'CT';
+    if (v === 't') return 'T';
+    return res;
+  }
+
+  function resultClass(res: string | null): string {
+    const v = (res ?? '').toLowerCase();
+    if (v === 'win') return 'badge-win';
+    if (v === 'loss') return 'badge-loss';
+    return 'text-sm text-game-muted';
+  }
+
+  function roundResultClass(res: string | null): string {
+    if (res)
+      return 'inline-flex rounded-md border border-game bg-game-muted px-2 py-0.5 text-xs font-semibold text-game-primary';
+    return 'text-sm text-game-muted';
   }
 
   async function selectMatch(matchId: number) {
@@ -111,24 +144,31 @@
     else await loadRounds(selectedId);
   }
 
+  let visibleMatches = $derived(compact ? matches.slice(0, maxRows) : matches);
+
   async function fetchMatches() {
     try {
-      const res = await fetch(`${apiUrl}/users/1/matches?limit=20`);
+      const lim = compact ? Math.min(maxRows, 20) : 20;
+      const res = await fetch(`${apiUrl}/users/1/matches?limit=${lim}`);
       const newMatches: Match[] = await res.json();
       if (newMatches.length && (!matches.length || newMatches[0].id !== matches[0].id)) {
         matches = newMatches;
         if (!selectedId && matches.length) selectMatch(matches[0].id);
       }
     } catch {
-      if (!matches.length) error = 'Could not load matches. Is the backend running?';
+      if (!matches.length) {
+        error = showDevSetupHints
+          ? 'Could not load matches. Is the backend running?'
+          : 'Could not load matches. Try again later.';
+      }
     }
   }
 
   onMount(async () => {
     await fetchMatches();
-    if (matches.length && !selectedId) selectMatch(matches[0].id);
+    if (matches.length && !selectedId && !compact) selectMatch(matches[0].id);
     loading = false;
-    pollInterval = setInterval(fetchMatches, 30000);
+    if (!compact) pollInterval = setInterval(fetchMatches, 30000);
   });
 
   onDestroy(() => {
@@ -137,78 +177,103 @@
 </script>
 
 {#if loading}
-  <p class="text-zinc-500 text-center py-8">Loading matches...</p>
+  <p class="py-8 text-center text-sm text-game-muted">Loading matches…</p>
 {:else if error}
-  <p class="text-red-400 text-center py-8">{error}</p>
+  <p class="py-8 text-center text-sm {showDevSetupHints ? 'text-red-600' : 'text-game-muted'}">
+    {showDevSetupHints ? error : 'No matches to display right now.'}
+  </p>
 {:else}
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
-        <tr class="text-xs uppercase tracking-wider text-zinc-500 border-b border-white border-opacity-10">
-          <th class="text-left py-3 px-3">When</th>
-          <th class="text-left py-3 px-3">Map</th>
-          <th class="text-left py-3 px-3">Score</th>
-          <th class="text-left py-3 px-3">Result</th>
-          <th class="text-left py-3 px-3">Duration</th>
+        <tr class="border-b border-game text-xs font-medium uppercase tracking-wider text-game-muted">
+          {#if !compact}
+            <th class="px-3 py-3 text-left">When</th>
+          {/if}
+          <th class="px-3 py-3 text-left">Match</th>
+          <th class="px-3 py-3 text-left">Score</th>
+          <th class="px-3 py-3 text-left">Status</th>
+          {#if !compact}
+            <th class="px-3 py-3 text-left">Duration</th>
+          {/if}
         </tr>
       </thead>
       <tbody>
-        {#each matches as m (m.id)}
-          <tr class={rowClass(m.id)} onclick={() => selectMatch(m.id)}>
-            <td class="py-2.5 px-3 text-zinc-400">{timeAgo(m.started_at)}</td>
-            <td class="py-2.5 px-3 font-medium">{mapDisplay(m.map_name)}</td>
-            <td class="py-2.5 px-3">
-              <span class={m.result === 'win' ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
-                {m.score_team ?? '-'}
+        {#each visibleMatches as m (m.id)}
+          <tr
+            class={rowClass(m.id)}
+            onclick={() => !compact && selectMatch(m.id)}
+            class:cursor-default={compact}
+          >
+            {#if !compact}
+              <td class="px-3 py-2.5 text-game-muted">{timeAgo(m.started_at)}</td>
+            {/if}
+            <td class="px-3 py-2.5">
+              <span class="inline-flex items-center gap-2 font-medium text-game-primary">
+                <span
+                  class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-game-muted text-xs text-game-muted"
+                  aria-hidden="true"
+                  >⌖</span
+                >
+                {mapDisplay(m.map_name)}
               </span>
-              <span class="text-zinc-600 mx-1">:</span>
-              <span>{m.score_opponent ?? '-'}</span>
             </td>
-            <td class="py-2.5 px-3">
+            <td class="px-3 py-2.5 font-medium text-game-primary">
+              <span class={m.result === 'win' ? 'text-emerald-700' : 'text-red-600'}>{m.score_team ?? '-'}</span>
+              <span class="mx-1 text-game-muted/50">:</span>
+              <span class="text-game-muted">{m.score_opponent ?? '-'}</span>
+            </td>
+            <td class="px-3 py-2.5">
               {#if m.result === 'win'}
-                <span class="px-2 py-0.5 rounded text-xs font-bold bg-green-900 text-green-400">W</span>
+                <span class={resultClass(m.result)}>Win</span>
               {:else if m.result === 'loss'}
-                <span class="px-2 py-0.5 rounded text-xs font-bold bg-red-900 text-red-400">L</span>
+                <span class={resultClass(m.result)}>Loss</span>
               {:else}
-                <span class="text-zinc-500">-</span>
+                <span class="text-game-muted">—</span>
               {/if}
             </td>
-            <td class="py-2.5 px-3 text-zinc-500">
-              {m.duration_seconds ? `${Math.round(m.duration_seconds / 60)}m` : '-'}
-            </td>
+            {#if !compact}
+              <td class="px-3 py-2.5 text-game-muted">
+                {m.duration_seconds ? `${Math.round(m.duration_seconds / 60)}m` : '-'}
+              </td>
+            {/if}
           </tr>
         {/each}
       </tbody>
     </table>
   </div>
 
-  {#if selectedId}
+  {#if selectedId && !compact}
     <!-- Tab switcher -->
-    <div class="mt-6 flex gap-1 border-b border-white border-opacity-10 mb-4">
+    <div class="mb-4 mt-6 flex gap-1 border-b border-game">
       <button
-        class={tab === 'scoreboard' ? 'px-4 py-2 text-sm font-semibold text-purple-400 border-b-2 border-purple-500' : 'px-4 py-2 text-sm text-zinc-500 hover:text-zinc-300 transition-colors'}
+        class={tab === 'scoreboard'
+          ? 'border-b-2 border-[var(--accent)] px-4 py-2 text-sm font-semibold text-game-accent'
+          : 'px-4 py-2 text-sm text-game-muted transition-colors hover:text-game-primary'}
         onclick={() => switchTab('scoreboard')}
       >Scoreboard</button>
       <button
-        class={tab === 'rounds' ? 'px-4 py-2 text-sm font-semibold text-purple-400 border-b-2 border-purple-500' : 'px-4 py-2 text-sm text-zinc-500 hover:text-zinc-300 transition-colors'}
+        class={tab === 'rounds'
+          ? 'border-b-2 border-[var(--accent)] px-4 py-2 text-sm font-semibold text-game-accent'
+          : 'px-4 py-2 text-sm text-game-muted transition-colors hover:text-game-primary'}
         onclick={() => switchTab('rounds')}
-      >Round Breakdown</button>
+      >Round breakdown</button>
     </div>
 
     {#if tab === 'scoreboard'}
       <Scoreboard data={scoreboard} loading={scoreboardLoading} />
     {:else}
       {#if roundsLoading}
-        <p class="text-zinc-500 text-sm">Loading rounds...</p>
+        <p class="text-sm text-game-muted">Loading rounds…</p>
       {:else if rounds.length === 0}
-        <p class="text-zinc-500 text-sm">No round data for this match.</p>
+        <p class="text-sm text-game-muted">No round data for this match.</p>
       {:else}
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="text-xs uppercase tracking-wider text-zinc-500 border-b border-white border-opacity-10">
+              <tr class="border-b border-game text-xs font-medium uppercase tracking-wider text-game-muted">
                 <th class="text-left py-2 px-2">#</th>
-                <th class="text-left py-2 px-2">Side</th>
+                <th class="text-left py-2 px-2">Result</th>
                 <th class="text-left py-2 px-2">K</th>
                 <th class="text-left py-2 px-2">D</th>
                 <th class="text-left py-2 px-2">Weapon</th>
@@ -217,23 +282,27 @@
             </thead>
             <tbody>
               {#each rounds as r (r.id)}
-                <tr class="border-b border-white border-opacity-5">
-                  <td class="py-1.5 px-2 text-zinc-500">{r.round_number}</td>
+                <tr class="border-b border-game">
+                  <td class="px-2 py-1.5 text-game-muted">{r.round_number}</td>
                   <td class="py-1.5 px-2">
-                    <span class={r.winning_team === 'CT' ? 'text-blue-400' : 'text-amber-400'}>
-                      {r.winning_team ?? '-'}
+                    <span class={roundResultClass(r.winning_team)}>
+                      {resultLabel(r.winning_team)}
                     </span>
                   </td>
                   <td class={killClass(r.kills)}>{r.kills ?? 0}</td>
                   <td class={deathClass(r.deaths)}>{r.deaths ?? 0}</td>
-                  <td class="py-1.5 px-2 text-zinc-300">{r.weapon_used ?? '-'}</td>
-                  <td class="py-1.5 px-2 text-xs text-zinc-500">
+                  <td class="px-2 py-1.5 text-game-primary">{r.weapon_used ?? '-'}</td>
+                  <td class="px-2 py-1.5 text-xs text-game-muted">
                     {#each r.weapon_stats as ws}
                       <span class="mr-2">
                         {ws.hits}/{ws.shots}
-                        {#if ws.headshots > 0}
-                          <span class="text-amber-400">({ws.headshots} HS)</span>
-                        {/if}
+                        <span class="ml-1">
+                          ({Math.round((ws.hits / Math.max(1, ws.shots || 1)) * 100)}% acc
+                          {#if ws.headshots > 0}
+                            , <span class="text-game-accent">{ws.headshots} HS</span>
+                          {/if}
+                          )
+                        </span>
                       </span>
                     {/each}
                   </td>

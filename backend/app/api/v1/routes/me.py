@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,11 +14,26 @@ from app.services.external_clients import (
     fetch_csgo_classic_stats,
     fetch_faceit_player_by_nickname,
     fetch_premier_and_faceit_from_remote,
+    fetch_riot_account_by_riot_id,
     fetch_steam_profile,
+    fetch_valorant_matchlist,
 )
+from app.services.valorant_stats import build_player_valorant_stats
 
 
 router = APIRouter()
+
+
+def _faceit_sync_missing_key_message() -> str:
+    if settings.dev_hints_in_api:
+        return "FACEIT_API_KEY not configured. Add it to backend/.env"
+    return "Live match data is not available right now."
+
+
+def _sync_failure_message(exc: Exception) -> str:
+    if settings.dev_hints_in_api:
+        return str(exc)
+    return "Sync failed. Try again later."
 
 
 # FACEIT level 1–10 to hex (grey → green → yellow → orange → red → gold)
@@ -74,6 +89,7 @@ class ProfileOverview(BaseModel):
     faceit_color_hex: str | None = None
     premier_rating: int | None = None
     premier_color_hex: str | None = None
+    riot_api_configured: bool = False
 
 
 @router.get("/", response_model=ProfileOverview)
@@ -206,6 +222,7 @@ async def get_profile(db: AsyncSession = Depends(get_db)) -> ProfileOverview:
         faceit_color_hex=faceit_color_hex,
         premier_rating=premier_rating,
         premier_color_hex=premier_color_hex,
+        riot_api_configured=bool(settings.RIOT_API_KEY and settings.RIOT_API_KEY.strip()),
     )
 
 
@@ -280,14 +297,14 @@ async def trigger_sync() -> SyncResult:
     if not settings.FACEIT_API_KEY:
         return SyncResult(
             success=False,
-            message="FACEIT_API_KEY not configured. Add it to backend/.env",
+            message=_faceit_sync_missing_key_message(),
             api_configured=False,
         )
     try:
         await _sync_once()
         return SyncResult(success=True, message="Sync complete", api_configured=True)
     except Exception as e:
-        return SyncResult(success=False, message=str(e), api_configured=True)
+        return SyncResult(success=False, message=_sync_failure_message(e), api_configured=True)
 
 
 @router.delete("/seed-data")
@@ -361,6 +378,218 @@ class CSGOClassicStats(BaseModel):
     kd: float
     total_wins: int
     total_time_hours: float
+
+
+class ValorantAccountRow(BaseModel):
+    """One Riot ID + optional match list."""
+
+    game_name: str | None = None
+    tag_line: str | None = None
+    puuid: str | None = None
+    recent_match_ids: list[str] = Field(default_factory=list)
+    error: str | None = None
+
+
+class ValorantOverview(BaseModel):
+    """
+    All configured Valorant Riot IDs (see RIOT_RIOT_IDS) or a single ?game_name=&tag_line= lookup.
+    """
+
+    api_configured: bool
+    accounts: list[ValorantAccountRow] = Field(default_factory=list)
+    error: str | None = None
+
+
+async def _valorant_row_for_riot_id(game_name: str, tag_line: str) -> ValorantAccountRow:
+    gn, tag = game_name.strip(), tag_line.strip()
+    try:
+        account = await fetch_riot_account_by_riot_id(gn, tag)
+        if not account:
+            return ValorantAccountRow(
+                game_name=gn,
+                tag_line=tag,
+                error=(
+                    "Riot account not found (check routing region and Riot ID)."
+                    if settings.dev_hints_in_api
+                    else "Riot account could not be found."
+                ),
+            )
+
+        puuid = account.get("puuid")
+        ids: list[str] = []
+        if puuid:
+            matchlist = await fetch_valorant_matchlist(str(puuid))
+            if matchlist:
+                for h in (matchlist.get("history") or [])[:20]:
+                    mid = h.get("matchId")
+                    if mid:
+                        ids.append(str(mid))
+
+        return ValorantAccountRow(
+            game_name=str(account.get("gameName") or gn),
+            tag_line=str(account.get("tagLine") or tag),
+            puuid=str(puuid) if puuid else None,
+            recent_match_ids=ids,
+        )
+    except Exception as e:  # pragma: no cover - external API
+        return ValorantAccountRow(
+            game_name=gn,
+            tag_line=tag,
+            error=(
+                str(e)
+                if settings.dev_hints_in_api
+                else "Could not load Valorant data for this account."
+            ),
+        )
+
+
+@router.get("/valorant", response_model=ValorantOverview)
+async def get_valorant_overview(
+    game_name: str | None = None,
+    tag_line: str | None = None,
+) -> ValorantOverview:
+    """
+    Look up one or more Riot accounts and list recent Valorant match IDs per account.
+
+    - Query `?game_name=&tag_line=` returns exactly that one account.
+    - Otherwise uses `RIOT_RIOT_IDS` (e.g. `pmecc#pmec,peemec#pmec`) or `RIOT_GAME_NAME` + `RIOT_TAG_LINE`.
+    """
+    if not settings.RIOT_API_KEY or not settings.RIOT_API_KEY.strip():
+        return ValorantOverview(
+            api_configured=False,
+            error=(
+                "RIOT_API_KEY not configured"
+                if settings.dev_hints_in_api
+                else "Valorant data is not available right now."
+            ),
+        )
+
+    if (game_name or "").strip() and (tag_line or "").strip():
+        row = await _valorant_row_for_riot_id(game_name or "", tag_line or "")
+        return ValorantOverview(api_configured=True, accounts=[row])
+
+    pairs = settings.valorant_riot_id_pairs
+    if not pairs:
+        return ValorantOverview(
+            api_configured=True,
+            error=(
+                "Set RIOT_RIOT_IDS (e.g. pmecc#pmec,peemec#pmec) or RIOT_GAME_NAME + RIOT_TAG_LINE, or pass ?game_name=&tag_line="
+                if settings.dev_hints_in_api
+                else "Valorant profile could not be loaded."
+            ),
+            accounts=[],
+        )
+
+    accounts = [await _valorant_row_for_riot_id(gn, tg) for gn, tg in pairs]
+    return ValorantOverview(api_configured=True, accounts=accounts)
+
+
+class ValorantMatchRow(BaseModel):
+    match_id: str | None = None
+    map: str = "Unknown"
+    agent: str = "Unknown"
+    kills: int = 0
+    deaths: int = 0
+    assists: int = 0
+    acs: int = 0
+    kd: float = 0.0
+    score: str = "0-0"
+    won: bool = False
+    queue: str | None = None
+    started_at: int | None = None
+
+
+class ValorantAgentRow(BaseModel):
+    name: str
+    games: int = 0
+    wins: int = 0
+    kills: int = 0
+    deaths: int = 0
+    kd: float = 0.0
+    win_rate: float = 0.0
+
+
+class ValorantStatsSummary(BaseModel):
+    matches: int = 0
+    wins: int = 0
+    losses: int = 0
+    win_rate: float = 0.0
+    kd: float = 0.0
+    acs: int = 0
+    kills: int = 0
+    deaths: int = 0
+    assists: int = 0
+    top_agents: list[ValorantAgentRow] = Field(default_factory=list)
+
+
+class ValorantStatsResponse(BaseModel):
+    """Aggregated real per-match Valorant stats for one resolved Riot account."""
+
+    api_configured: bool
+    game_name: str | None = None
+    tag_line: str | None = None
+    summary: ValorantStatsSummary = Field(default_factory=ValorantStatsSummary)
+    matches: list[ValorantMatchRow] = Field(default_factory=list)
+    error: str | None = None
+
+
+@router.get("/valorant/stats", response_model=ValorantStatsResponse)
+async def get_valorant_stats(
+    game_name: str | None = None,
+    tag_line: str | None = None,
+    limit: int = 5,
+) -> ValorantStatsResponse:
+    """
+    Aggregate real per-match Valorant stats (ACS, K/D, win rate, top agents) for
+    the first configured Riot ID, or the one passed via ?game_name=&tag_line=.
+
+    Pulls full details for up to `limit` recent matches (kept low — val/match/v1
+    is rate-limited). Degrades gracefully to an empty summary when the key or
+    match data is unavailable.
+    """
+    if not settings.RIOT_API_KEY or not settings.RIOT_API_KEY.strip():
+        return ValorantStatsResponse(
+            api_configured=False,
+            error=(
+                "RIOT_API_KEY not configured"
+                if settings.dev_hints_in_api
+                else "Valorant data is not available right now."
+            ),
+        )
+
+    if (game_name or "").strip() and (tag_line or "").strip():
+        row = await _valorant_row_for_riot_id(game_name or "", tag_line or "")
+    else:
+        pairs = settings.valorant_riot_id_pairs
+        if not pairs:
+            return ValorantStatsResponse(
+                api_configured=True,
+                error=(
+                    "Set RIOT_RIOT_IDS or RIOT_GAME_NAME + RIOT_TAG_LINE, or pass ?game_name=&tag_line="
+                    if settings.dev_hints_in_api
+                    else "Valorant profile could not be loaded."
+                ),
+            )
+        row = await _valorant_row_for_riot_id(*pairs[0])
+
+    if row.error and not row.puuid:
+        return ValorantStatsResponse(
+            api_configured=True,
+            game_name=row.game_name,
+            tag_line=row.tag_line,
+            error=row.error,
+        )
+
+    stats = await build_player_valorant_stats(
+        row.puuid or "", row.recent_match_ids, limit=max(1, min(limit, 10))
+    )
+    return ValorantStatsResponse(
+        api_configured=True,
+        game_name=row.game_name,
+        tag_line=row.tag_line,
+        summary=ValorantStatsSummary(**stats["summary"]),
+        matches=[ValorantMatchRow(**m) for m in stats["matches"]],
+    )
 
 
 @router.get("/csgo-classic", response_model=CSGOClassicStats)

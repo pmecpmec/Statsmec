@@ -24,10 +24,10 @@
   let { data = null as ScoreboardData | null, loading = false } = $props();
 
   function ratingColor(r: number): string {
-    if (r >= 1.3) return 'text-green-400';
-    if (r >= 1.0) return 'text-white';
-    if (r >= 0.8) return 'text-amber-400';
-    return 'text-red-400';
+    if (r >= 1.3) return 'text-emerald-700';
+    if (r >= 1.0) return 'text-game-primary';
+    if (r >= 0.8) return 'text-amber-700';
+    return 'text-red-600';
   }
 
   function mapDisplay(name: string | null): string {
@@ -38,42 +38,42 @@
 </script>
 
 {#if loading}
-  <div class="text-center py-8 text-zinc-500">Loading scoreboard...</div>
+  <div class="py-8 text-center text-sm text-game-muted">Loading scoreboard…</div>
 {:else if !data}
-  <div class="text-center py-8 text-zinc-500">Select a match to view the scoreboard.</div>
+  <div class="py-8 text-center text-sm text-game-muted">Select a match to view the scoreboard.</div>
 {:else}
   <!-- Match header -->
-  <div class="flex items-center justify-center gap-6 mb-6">
+  <div class="mb-6 flex items-center justify-center gap-6">
     <div class="text-right">
-      <div class="text-xs uppercase tracking-wider text-blue-400 font-semibold mb-1">Counter-Terrorists</div>
-      <div class="text-3xl font-extrabold text-blue-400">{data.score_team ?? '-'}</div>
+      <div class="mb-1 text-xs font-semibold uppercase tracking-wider text-sky-700">Counter-Terrorists</div>
+      <div class="text-3xl font-extrabold text-sky-600">{data.score_team ?? '-'}</div>
     </div>
-    <div class="text-center px-4">
-      <div class="text-xs uppercase tracking-wider text-zinc-500 mb-1">{mapDisplay(data.map_name)}</div>
+    <div class="px-4 text-center">
+      <div class="mb-1 text-xs uppercase tracking-wider text-game-muted">{mapDisplay(data.map_name)}</div>
       {#if data.result === 'win'}
-        <span class="px-3 py-1 rounded-full text-xs font-bold bg-green-900 text-green-400">VICTORY</span>
+        <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">Victory</span>
       {:else if data.result === 'loss'}
-        <span class="px-3 py-1 rounded-full text-xs font-bold bg-red-900 text-red-400">DEFEAT</span>
+        <span class="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-800">Defeat</span>
       {:else}
-        <span class="px-3 py-1 rounded-full text-xs font-bold bg-zinc-800 text-zinc-400">DRAW</span>
+        <span class="rounded-full bg-game-muted px-3 py-1 text-xs font-bold text-game-muted">Draw</span>
       {/if}
     </div>
     <div class="text-left">
-      <div class="text-xs uppercase tracking-wider text-amber-400 font-semibold mb-1">Terrorists</div>
-      <div class="text-3xl font-extrabold text-amber-400">{data.score_opponent ?? '-'}</div>
+      <div class="mb-1 text-xs font-semibold uppercase tracking-wider text-amber-800">Terrorists</div>
+      <div class="text-3xl font-extrabold text-amber-700">{data.score_opponent ?? '-'}</div>
     </div>
   </div>
 
   <!-- CT Side -->
   <div class="mb-4">
-    <div class="flex items-center gap-2 mb-2">
-      <div class="w-1 h-4 rounded bg-blue-500"></div>
-      <span class="text-xs uppercase tracking-wider text-blue-400 font-semibold">Counter-Terrorists</span>
+    <div class="mb-2 flex items-center gap-2">
+      <div class="h-4 w-1 rounded bg-sky-500"></div>
+      <span class="text-xs font-semibold uppercase tracking-wider text-sky-700">Counter-Terrorists</span>
     </div>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
-          <tr class="text-xs uppercase tracking-wider text-zinc-500 border-b border-white border-opacity-10">
+          <tr class="border-b border-game text-xs font-medium uppercase tracking-wider text-game-muted">
             <th class="text-left py-2 px-3 w-40">Player</th>
             <th class="text-center py-2 px-2">K</th>
             <th class="text-center py-2 px-2">D</th>
@@ -85,20 +85,24 @@
         </thead>
         <tbody>
           {#each data.ct as p}
-            <tr class={p.is_self ? 'bg-purple-950 border-l-2 border-l-purple-500' : 'border-b border-white border-opacity-5'}>
-              <td class="py-2 px-3 font-medium">
+            <tr
+              class={p.is_self
+                ? 'border-b border-game border-l-2 border-l-[var(--accent)] bg-[var(--accent-soft)]/30'
+                : 'border-b border-game'}
+            >
+              <td class="px-3 py-2 font-medium">
                 {#if p.is_self}
-                  <span class="text-purple-400">{p.player_name}</span>
+                  <span class="font-semibold text-game-accent">{p.player_name}</span>
                 {:else}
                   {p.player_name}
                 {/if}
               </td>
-              <td class="text-center py-2 px-2 text-green-400 font-semibold">{p.kills}</td>
-              <td class="text-center py-2 px-2 text-red-400">{p.deaths}</td>
-              <td class="text-center py-2 px-2 text-zinc-400">{p.assists}</td>
-              <td class="text-center py-2 px-2">{p.adr.toFixed(1)}</td>
-              <td class="text-center py-2 px-2">{p.headshot_pct.toFixed(0)}%</td>
-              <td class={`text-center py-2 px-2 font-bold ${ratingColor(p.rating)}`}>{p.rating.toFixed(2)}</td>
+              <td class="px-2 py-2 text-center font-semibold text-emerald-700">{p.kills}</td>
+              <td class="px-2 py-2 text-center text-red-600">{p.deaths}</td>
+              <td class="px-2 py-2 text-center text-game-muted">{p.assists}</td>
+              <td class="px-2 py-2 text-center text-game-primary">{p.adr.toFixed(1)}</td>
+              <td class="px-2 py-2 text-center text-game-primary">{p.headshot_pct.toFixed(0)}%</td>
+              <td class={`px-2 py-2 text-center font-bold ${ratingColor(p.rating)}`}>{p.rating.toFixed(2)}</td>
             </tr>
           {/each}
         </tbody>
@@ -108,14 +112,14 @@
 
   <!-- T Side -->
   <div>
-    <div class="flex items-center gap-2 mb-2">
-      <div class="w-1 h-4 rounded bg-amber-500"></div>
-      <span class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Terrorists</span>
+    <div class="mb-2 flex items-center gap-2">
+      <div class="h-4 w-1 rounded bg-amber-500"></div>
+      <span class="text-xs font-semibold uppercase tracking-wider text-amber-800">Terrorists</span>
     </div>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
-          <tr class="text-xs uppercase tracking-wider text-zinc-500 border-b border-white border-opacity-10">
+          <tr class="border-b border-game text-xs font-medium uppercase tracking-wider text-game-muted">
             <th class="text-left py-2 px-3 w-40">Player</th>
             <th class="text-center py-2 px-2">K</th>
             <th class="text-center py-2 px-2">D</th>
@@ -127,20 +131,24 @@
         </thead>
         <tbody>
           {#each data.t as p}
-            <tr class={p.is_self ? 'bg-purple-950 border-l-2 border-l-purple-500' : 'border-b border-white border-opacity-5'}>
-              <td class="py-2 px-3 font-medium">
+            <tr
+              class={p.is_self
+                ? 'border-b border-game border-l-2 border-l-[var(--accent)] bg-[var(--accent-soft)]/30'
+                : 'border-b border-game'}
+            >
+              <td class="px-3 py-2 font-medium">
                 {#if p.is_self}
-                  <span class="text-purple-400">{p.player_name}</span>
+                  <span class="font-semibold text-game-accent">{p.player_name}</span>
                 {:else}
                   {p.player_name}
                 {/if}
               </td>
-              <td class="text-center py-2 px-2 text-green-400 font-semibold">{p.kills}</td>
-              <td class="text-center py-2 px-2 text-red-400">{p.deaths}</td>
-              <td class="text-center py-2 px-2 text-zinc-400">{p.assists}</td>
-              <td class="text-center py-2 px-2">{p.adr.toFixed(1)}</td>
-              <td class="text-center py-2 px-2">{p.headshot_pct.toFixed(0)}%</td>
-              <td class={`text-center py-2 px-2 font-bold ${ratingColor(p.rating)}`}>{p.rating.toFixed(2)}</td>
+              <td class="px-2 py-2 text-center font-semibold text-emerald-700">{p.kills}</td>
+              <td class="px-2 py-2 text-center text-red-600">{p.deaths}</td>
+              <td class="px-2 py-2 text-center text-game-muted">{p.assists}</td>
+              <td class="px-2 py-2 text-center text-game-primary">{p.adr.toFixed(1)}</td>
+              <td class="px-2 py-2 text-center text-game-primary">{p.headshot_pct.toFixed(0)}%</td>
+              <td class={`px-2 py-2 text-center font-bold ${ratingColor(p.rating)}`}>{p.rating.toFixed(2)}</td>
             </tr>
           {/each}
         </tbody>

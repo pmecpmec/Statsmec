@@ -31,6 +31,15 @@
 
 ---
 
+### Git branches (GitHub Pages)
+
+- **`main`** — production. Pushes to `main` run [`.github/workflows/deploy-frontend.yml`](.github/workflows/deploy-frontend.yml) and update the public site. That build intentionally omits developer-only UI (no FACEIT key/setup banners; **Sync FACEIT** stays hidden until the profile reports the API is configured).
+- **`develop`** — use for day-to-day work, then merge (or PR) into `main` when the live site should change.
+
+To create `develop`: `git checkout -b develop` and `git push -u origin develop`.
+
+---
+
 ### Environment Variables
 
 Copy the example file and edit as needed:
@@ -44,8 +53,10 @@ Key variables:
 - **Database**
   - `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB`
 - **External APIs**
+  - `APP_ENV` – `production` (default) for public-safe API messages; `development` for verbose setup hints (see `docs/API_KEYS.md`)
   - `STEAM_API_KEY` – Steam Web API key
   - `FACEIT_API_KEY` – FACEIT API key
+  - `RIOT_API_KEY` – Riot Games API (Valorant / account-v1); optional `RIOT_ROUTING_REGION`, `RIOT_VAL_SHARD`, `RIOT_RIOT_IDS` (or `RIOT_GAME_NAME` + `RIOT_TAG_LINE`)
 - **CORS**
   - `BACKEND_CORS_ORIGINS` – e.g. `["http://localhost:5173"]`
 

@@ -5,21 +5,29 @@ export default {
   theme: {
     extend: {
       colors: {
+        stitch: {
+          cream: '#fdfbf7',
+          paper: '#f5f0e8',
+          orange: '#e66b33',
+          'orange-soft': 'rgba(230, 107, 51, 0.12)',
+          ink: '#1a1a1a',
+          muted: '#6b6b6b',
+        },
         primary: {
-          DEFAULT: '#7c3aed',
-          50: '#f5f3ff',
-          100: '#ede9fe',
-          200: '#ddd6fe',
-          300: '#c4b5fd',
-          400: '#a78bfa',
-          500: '#8b5cf6',
-          600: '#7c3aed',
-          700: '#6d28d9',
-          800: '#5b21b6',
-          900: '#4c1d95',
+          DEFAULT: '#e66b33',
+          50: '#fff7ed',
+          100: '#ffedd5',
+          200: '#fed7aa',
+          300: '#fdba74',
+          400: '#fb923c',
+          500: '#e66b33',
+          600: '#ea580c',
+          700: '#c2410c',
+          800: '#9a3412',
+          900: '#7c2d12',
         },
         secondary: '#c084fc',
-        accent: '#f59e0b',
+        accent: '#e66b33',
         cs: {
           green: '#22c55e',
           red: '#ef4444',
@@ -33,7 +41,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'system-ui', 'sans-serif'],
       },
       animation: {
         'glow': 'glow 3s ease-in-out infinite',
@@ -44,8 +53,8 @@ export default {
       },
       keyframes: {
         glow: {
-          '0%, 100%': { boxShadow: '0 0 40px rgba(124, 58, 237, 0.5)' },
-          '50%': { boxShadow: '0 0 60px rgba(124, 58, 237, 0.8)' },
+          '0%, 100%': { boxShadow: '0 0 28px rgba(255, 70, 85, 0.35)' },
+          '50%': { boxShadow: '0 0 44px rgba(255, 70, 85, 0.5)' },
         },
         fadeUp: {
           from: { opacity: '0', transform: 'translateY(30px)' },

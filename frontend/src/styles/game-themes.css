@@ -1,0 +1,101 @@
+/**
+ * Two design systems: CS2 (tactical / flat) vs Valorant (futuristic / glow).
+ * Set on <html data-game="cs2"> or data-game="valorant"> from MainLayout.
+ */
+
+@layer base {
+  :root,
+  [data-game='cs2'] {
+    --bg-primary: #0b0f14;
+    --bg-secondary: #0e141c;
+    --bg-card: #121821;
+    --bg-card-muted: #161d28;
+    --text-primary: #e6edf3;
+    --text-secondary: #9aa7b2;
+    --text-muted: #5c6b7a;
+    --border-color: rgba(230, 237, 243, 0.08);
+    --accent: #f2a900;
+    --accent-soft: rgba(242, 169, 0, 0.12);
+    --accent-2: #5c6b7a;
+    --shadow-sm: none;
+    --shadow-md: 0 1px 0 rgba(255, 255, 255, 0.04);
+    --radius-card: 6px;
+    --radius-hero: 8px;
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-display: 'IBM Plex Sans', system-ui, sans-serif;
+    --hero-wave-opacity: 0;
+    --avatar-glow: none;
+    --badge-win-bg: rgba(74, 222, 128, 0.12);
+    --badge-win-text: #4ade80;
+    --badge-loss-bg: rgba(248, 113, 113, 0.1);
+    --badge-loss-text: #f87171;
+    --scrollbar-thumb: rgba(242, 169, 0, 0.35);
+    --glow-accent: rgba(242, 169, 0, 0.25);
+    --accent-3: #5c6b7a;
+  }
+
+  [data-game='valorant'] {
+    --bg-primary: #0f1923;
+    --bg-secondary: #152532;
+    --bg-card: #1a2733;
+    --bg-card-muted: #1e2f3d;
+    --text-primary: #f9fafb;
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
+    --border-color: rgba(255, 70, 85, 0.12);
+    --accent: #ff4655;
+    --accent-soft: rgba(255, 70, 85, 0.15);
+    --accent-2: #00e5ff;
+    --accent-3: #8b5cf6;
+    --shadow-sm: 0 4px 24px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 8px 40px rgba(0, 0, 0, 0.45);
+    --radius-card: 16px;
+    --radius-hero: 20px;
+    --font-sans: 'Outfit', system-ui, sans-serif;
+    --font-display: 'Space Grotesk', system-ui, sans-serif;
+    --hero-wave-opacity: 1;
+    --avatar-glow: 0 0 32px rgba(255, 70, 85, 0.45);
+    --glow-accent: rgba(255, 70, 85, 0.25);
+    --badge-win-bg: #ff4655;
+    --badge-win-text: #ffffff;
+    --badge-loss-bg: rgba(0, 229, 255, 0.12);
+    --badge-loss-text: #22d3ee;
+    --scrollbar-thumb: rgba(255, 70, 85, 0.4);
+  }
+}
+
+@layer utilities {
+  .text-game-primary {
+    color: var(--text-primary);
+  }
+  .text-game-secondary {
+    color: var(--text-secondary);
+  }
+  .text-game-muted {
+    color: var(--text-muted);
+  }
+  .text-game-accent {
+    color: var(--accent);
+  }
+  .text-game-accent-2 {
+    color: var(--accent-2);
+  }
+  .bg-game-primary {
+    background-color: var(--bg-primary);
+  }
+  .bg-game-secondary {
+    background-color: var(--bg-secondary);
+  }
+  .bg-game-card {
+    background-color: var(--bg-card);
+  }
+  .bg-game-muted {
+    background-color: var(--bg-card-muted);
+  }
+  .border-game {
+    border-color: var(--border-color);
+  }
+  .ring-game-accent {
+    --tw-ring-color: var(--accent);
+  }
+}

@@ -5,7 +5,12 @@ from app.api.v1.router import api_router
 from app.core.config import settings
 from app.db.session import engine
 from app.models.base import Base
-from app.services.external_clients import faceit_client, steam_client
+from app.services.external_clients import (
+    faceit_client,
+    riot_account_client,
+    steam_client,
+    valorant_client,
+)
 from app.services.auto_sync import start_auto_sync, stop_auto_sync
 from app.services.cache import ensure_cache_ready, get_redis_client
 
@@ -37,6 +42,8 @@ def create_app() -> FastAPI:
         stop_auto_sync()
         await steam_client.aclose()
         await faceit_client.aclose()
+        await riot_account_client.aclose()
+        await valorant_client.aclose()
         try:
             await get_redis_client().aclose()
         except Exception:

@@ -1,0 +1,53 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import AppSidebar from '../components/AppSidebar.astro';
+import DashboardTopBar from '../components/DashboardTopBar.astro';
+import ValorantPageMain from '../components/ValorantPageMain.svelte';
+
+const API = import.meta.env.PUBLIC_API_URL ?? 'http://127.0.0.1:8000/api/v1';
+---
+
+<MainLayout
+  game="valorant"
+  title="Statsmec — Valorant"
+  description="Valorant performance, agents, and match history for pmec."
+>
+  <AppSidebar game="valorant" />
+  <div class="flex min-h-screen flex-col md:pl-[4.25rem]">
+    <DashboardTopBar headline="Agent dossier" />
+
+    <ValorantPageMain client:load apiUrl={API} />
+
+    <section id="stats" class="border-t border-game bg-game-secondary/40 px-4 py-16 md:px-8">
+      <div class="mx-auto max-w-6xl">
+        <h2 class="section-title-accent reveal mb-8 text-center font-display text-3xl font-semibold text-game-primary md:mb-10 md:text-4xl">
+          Ability usage
+        </h2>
+        <div class="glass-card reveal stagger-1 mx-auto max-w-2xl">
+          <p class="text-center text-sm text-game-muted">
+            Placeholder for ability casts per round — wire when match timeline data is ingested.
+          </p>
+          <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {['C', 'Q', 'E', 'X'].map((k) => (
+              <div
+                class="border border-game bg-game-muted py-4 text-center font-mono text-lg font-bold text-game-accent-2"
+                style="border-radius: var(--radius-card);"
+              >
+                {k}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="settings" class="bg-game-primary px-4 py-12 md:px-8">
+      <div class="mx-auto max-w-2xl text-center">
+        <p class="text-sm text-game-muted">
+          Crosshair &amp; sensitivity live on the <a href="/" class="text-game-accent underline hover:no-underline">CS2</a> page.
+          Valorant loadout UI can mirror that pattern here later.
+        </p>
+      </div>
+    </section>
+  </div>
+</MainLayout>

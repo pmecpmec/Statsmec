@@ -1,7 +1,12 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import { showDevSetupHints } from '../lib/devHints';
 
-  let { apiUrl = 'http://127.0.0.1:8000/api/v1' } = $props();
+  let {
+    apiUrl = 'http://127.0.0.1:8000/api/v1',
+    /** Hide Sync FACEIT on public builds when the API is not configured (see ProfileHero). */
+    faceitSyncVisible = true,
+  } = $props();
 
   type Status = {
     status: string;
@@ -34,10 +39,12 @@
       syncMsg = result.message;
       if (result.success) {
         await poll();
-        setTimeout(() => { syncMsg = ''; }, 3000);
+        setTimeout(() => {
+          syncMsg = '';
+        }, 3000);
       }
     } catch {
-      syncMsg = 'Backend offline';
+      syncMsg = showDevSetupHints ? 'Backend offline' : 'Could not sync. Try again later.';
     }
     syncing = false;
   }
@@ -52,43 +59,43 @@
   });
 </script>
 
-<div class="flex items-center gap-3 flex-wrap">
+<div class="flex flex-wrap items-center justify-center gap-3">
   {#if data}
-    <div class="flex items-center gap-3 px-4 py-2 rounded-full border border-white border-opacity-10" style="background: rgba(255,255,255,0.04);">
+    <div
+      class="flex items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2 shadow-sm"
+    >
       {#if data.status === 'in_game'}
         <span class="relative flex h-3 w-3">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+          <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex h-3 w-3 rounded-full bg-emerald-500"></span>
         </span>
-        <span class="text-sm font-semibold text-green-400">LIVE — In Game</span>
+        <span class="text-sm font-semibold text-emerald-700">Live — in game</span>
       {:else if data.status === 'online'}
-        <span class="relative flex h-3 w-3">
-          <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-        </span>
-        <span class="text-sm text-zinc-400">
+        <span class="relative inline-flex h-3 w-3 rounded-full bg-sky-500"></span>
+        <span class="text-sm text-game-muted">
           {data.total_matches} matches
           {#if data.last_match_ago}
-            <span class="text-zinc-600">· last {data.last_match_ago}</span>
+            <span class="text-stone-400"> · last {data.last_match_ago}</span>
           {/if}
         </span>
       {:else}
-        <span class="relative flex h-3 w-3">
-          <span class="relative inline-flex rounded-full h-3 w-3 bg-zinc-600"></span>
-        </span>
-        <span class="text-sm text-zinc-500">Offline</span>
+        <span class="relative inline-flex h-3 w-3 rounded-full bg-stone-400"></span>
+        <span class="text-sm text-game-muted">Offline</span>
       {/if}
     </div>
   {/if}
 
-  <button
-    class="px-3 py-1.5 rounded-full text-xs font-semibold border border-purple-500 border-opacity-30 text-purple-400 hover:bg-purple-900 transition-colors disabled:opacity-50"
-    onclick={triggerSync}
-    disabled={syncing}
-  >
-    {syncing ? 'Syncing...' : 'Sync FACEIT'}
-  </button>
+  {#if faceitSyncVisible}
+    <button
+      class="rounded-full border border-[var(--accent)]/40 bg-[var(--accent-soft)] px-4 py-2 text-xs font-semibold text-game-accent transition-colors hover:bg-[var(--accent)]/15 disabled:opacity-50"
+      onclick={triggerSync}
+      disabled={syncing}
+    >
+      {syncing ? 'Syncing…' : 'Sync FACEIT'}
+    </button>
 
-  {#if syncMsg}
-    <span class="text-xs text-zinc-500">{syncMsg}</span>
+    {#if syncMsg}
+      <span class="text-xs text-game-muted">{syncMsg}</span>
+    {/if}
   {/if}
 </div>

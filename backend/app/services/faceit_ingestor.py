@@ -339,10 +339,18 @@ async def upsert_faceit_matches(
                     if our_ps:
                         break
 
+                # Interpret Winner relative to pmec's team so the frontend
+                # can show a clean per-round result instead of a raw team id.
+                winner_id = round_stats.get("Winner") if isinstance(round_stats, dict) else None
+                if pmec_team_id and winner_id:
+                    round_outcome = "win" if winner_id == pmec_team_id else "loss"
+                else:
+                    round_outcome = None
+
                 round_row = Round(
                     match_id=match.id,
                     round_number=round_number,
-                    winning_team=round_stats.get("Winner") if isinstance(round_stats, dict) else None,
+                    winning_team=round_outcome,
                     kills=our_kills,
                     deaths=our_deaths,
                     weapon_used=our_weapon,

@@ -1,0 +1,56 @@
+---
+interface Props {
+  headline?: string;
+}
+
+const { headline = 'Overview' } = Astro.props;
+---
+
+<header
+  class="sticky top-0 z-50 flex items-center justify-between border-b border-game bg-game-card/90 px-6 py-4 backdrop-blur-md md:px-8"
+>
+  <h1 class="font-display text-lg font-semibold tracking-tight text-game-primary md:text-xl">{headline}</h1>
+  <div class="flex items-center gap-3 md:gap-4">
+    <a
+      href="https://pmec.dev"
+      class="hidden rounded-full border border-game px-3 py-1.5 text-xs font-medium text-game-muted transition-colors hover:border-[var(--accent)]/40 hover:text-game-accent sm:inline-block"
+    >
+      pmec.dev
+    </a>
+    <button
+      type="button"
+      class="flex h-10 w-10 items-center justify-center rounded-full border border-game text-game-muted transition-colors hover:bg-game-muted hover:text-game-accent"
+      aria-label="Messages"
+    >
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="relative flex h-10 w-10 items-center justify-center rounded-full border border-game text-game-muted transition-colors hover:bg-game-muted hover:text-game-accent"
+      aria-label="Notifications"
+    >
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.082A2.02 2.02 0 0021 16.382V6.618a2.02 2.02 0 00-1.589-1.98l-5.25-1.05A2 2 0 0012 5.25v12.5c0 .729.394 1.396 1.03 1.75M9 9h.008v.008H9V9z" />
+      </svg>
+      <span
+        class="absolute right-2 top-2 h-2 w-2 rounded-full bg-[var(--accent)] ring-2 ring-[var(--bg-primary)]"
+        aria-hidden="true"></span>
+    </button>
+    <a
+      href="https://steamcommunity.com/id/pmec"
+      target="_blank"
+      rel="noreferrer"
+      class="h-10 w-10 overflow-hidden rounded-full border-2 border-[var(--accent)]/50 ring-2 ring-[var(--accent)]/15"
+    >
+      <img
+        src="https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
+        alt=""
+        class="h-full w-full object-cover"
+        width="40"
+        height="40"
+      />
+    </a>
+  </div>
+</header>

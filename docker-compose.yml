@@ -30,6 +30,7 @@ services:
       - db
       - redis
     environment:
+      APP_ENV: ${APP_ENV:-development}
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER:-statsmec}
@@ -38,6 +39,12 @@ services:
       REDIS_URL: redis://redis:6379/0
       STEAM_API_KEY: ${STEAM_API_KEY:-}
       FACEIT_API_KEY: ${FACEIT_API_KEY:-}
+      RIOT_API_KEY: ${RIOT_API_KEY:-}
+      RIOT_ROUTING_REGION: ${RIOT_ROUTING_REGION:-europe}
+      RIOT_VAL_SHARD: ${RIOT_VAL_SHARD:-eu}
+      RIOT_GAME_NAME: ${RIOT_GAME_NAME:-}
+      RIOT_TAG_LINE: ${RIOT_TAG_LINE:-}
+      RIOT_RIOT_IDS: ${RIOT_RIOT_IDS:-}
     ports:
       - "8000:8000"
 

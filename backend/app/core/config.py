@@ -12,6 +12,8 @@ PMEC_FACEIT_NICKNAME = "pmec"
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Statsmec API"
     API_V1_STR: str = "/api/v1"
+    # "development" = verbose setup hints in JSON responses; "production" = safe messages for public APIs.
+    APP_ENV: str = "production"
 
     POSTGRES_HOST: str = "db"
     POSTGRES_PORT: int = 5432
@@ -25,6 +27,18 @@ class Settings(BaseSettings):
 
     STEAM_API_KEY: str | None = None
     FACEIT_API_KEY: str | None = None
+
+    # Riot Games API (Valorant / account-v1). Use header X-Riot-Token (development keys are RGAPI-...).
+    RIOT_API_KEY: str | None = None
+    # Regional routing for account-v1: americas | europe | asia
+    RIOT_ROUTING_REGION: str = "europe"
+    # Valorant game endpoints (match list, etc.): na | latam | br | eu | ap | kr
+    RIOT_VAL_SHARD: str = "eu"
+    # Default Riot ID for /me/valorant when query params omitted (GameName + tag, e.g. name "pmec" tag "EUW")
+    RIOT_GAME_NAME: str | None = None
+    RIOT_TAG_LINE: str | None = None
+    # Multiple Valorant accounts: comma-separated Riot IDs "name#tag,name#tag" (overrides single pair when set)
+    RIOT_RIOT_IDS: str | None = None
 
     # MongoDB (optional cache)
     MONGODB_URI: str | None = None
@@ -66,6 +80,31 @@ class Settings(BaseSettings):
             f"{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:"
             f"{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
+
+    @property
+    def valorant_riot_id_pairs(self) -> list[tuple[str, str]]:
+        """(game_name, tag_line) for each configured Valorant Riot ID."""
+        pairs: list[tuple[str, str]] = []
+        raw = (self.RIOT_RIOT_IDS or "").strip()
+        if raw:
+            for part in raw.split(","):
+                part = part.strip()
+                if "#" not in part:
+                    continue
+                name, _, tag = part.partition("#")
+                name, tag = name.strip(), tag.strip()
+                if name and tag:
+                    pairs.append((name, tag))
+        if not pairs:
+            gn = (self.RIOT_GAME_NAME or "").strip()
+            tg = (self.RIOT_TAG_LINE or "").strip()
+            if gn and tg:
+                pairs.append((gn, tg))
+        return pairs
+
+    @property
+    def dev_hints_in_api(self) -> bool:
+        return (self.APP_ENV or "").strip().lower() in ("development", "dev", "local")
 
 
 @lru_cache

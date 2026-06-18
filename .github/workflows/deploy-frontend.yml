@@ -1,3 +1,5 @@
+# Production site: only `main` is deployed. Do day-to-day work on `develop` (or feature branches),
+# then merge to `main` when the public build should update.
 name: Deploy Astro frontend to GitHub Pages
 
 on:
@@ -36,6 +38,8 @@ jobs:
         run: npm ci
 
       - name: Build
+        env:
+          PUBLIC_DEV_UI: 'false'
         run: |
           npm run build
           cp CNAME dist/CNAME || true

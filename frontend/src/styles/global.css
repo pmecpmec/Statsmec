@@ -1,69 +1,201 @@
+@import './game-themes.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-:root {
-  --bg-primary: #0f0f23;
-  --bg-secondary: #1a1a2e;
-  --bg-glass: rgba(255, 255, 255, 0.06);
-  --text-primary: #ffffff;
-  --text-secondary: #a1a1aa;
-  --border-color: rgba(255, 255, 255, 0.1);
-  --shadow-color: rgba(124, 58, 237, 0.15);
-}
 
 html {
   scroll-behavior: smooth;
 }
 
 body {
+  font-family: var(--font-sans);
   background: var(--bg-primary);
   color: var(--text-primary);
   overflow-x: hidden;
 }
 
-.mesh-gradient {
+.font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+
+/* CS2: none. Valorant: mesh + accent haze */
+.app-bg-decoration {
   position: fixed;
   inset: 0;
   z-index: -1;
+  pointer-events: none;
+  background: var(--bg-primary);
+}
+
+[data-game='valorant'] .app-bg-decoration {
   background:
-    radial-gradient(ellipse 80% 60% at 20% 30%, rgba(124, 58, 237, 0.12), transparent),
-    radial-gradient(ellipse 60% 80% at 80% 70%, rgba(99, 102, 241, 0.08), transparent),
-    radial-gradient(ellipse 50% 50% at 50% 50%, rgba(139, 92, 246, 0.05), transparent);
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(255, 70, 85, 0.08), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(139, 92, 246, 0.07), transparent 50%),
+    radial-gradient(ellipse 50% 50% at 50% 100%, rgba(0, 229, 255, 0.05), transparent 45%),
+    var(--bg-primary);
+}
+
+[data-game='cs2'] .app-bg-decoration {
+  background-image: linear-gradient(
+    180deg,
+    rgba(242, 169, 0, 0.02) 0%,
+    transparent 32%
+  );
+  background-color: var(--bg-primary);
+}
+
+.hero-waves {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: var(--hero-wave-opacity);
+}
+.hero-waves svg {
+  position: absolute;
+  width: 120%;
+  min-width: 600px;
+  left: -10%;
+  top: 40%;
+  color: var(--accent);
 }
 
 @layer components {
   .glass-card {
-    @apply relative rounded-2xl border border-white/10 p-6 md:p-8;
-    background: var(--bg-glass);
-    backdrop-filter: blur(12px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+    border-radius: var(--radius-card);
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--border-color);
+    background: var(--bg-card);
+    box-shadow: var(--shadow-md);
+    padding: 1.5rem;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.25s ease;
   }
 
-  .glass-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+  @media (min-width: 768px) {
+    .glass-card {
+      padding: 2rem;
+    }
+  }
+
+  [data-game='cs2'] .glass-card:hover {
+    border-color: rgba(242, 169, 0, 0.2);
+  }
+
+  [data-game='valorant'] .glass-card:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      var(--shadow-md),
+      0 0 40px var(--glow-accent, rgba(255, 70, 85, 0.15));
+  }
+
+  [data-game='valorant'] .valorant-account-tab-inactive:hover {
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
   }
 
   .text-gradient {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #7c3aed, #c084fc);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    background-image: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 100%);
+  }
+
+  [data-game='valorant'] .text-gradient {
+    background-image: linear-gradient(135deg, #f9fafb 0%, var(--accent) 45%, var(--accent-2) 100%);
   }
 
   .stat-card {
-    @apply glass-card flex flex-col items-center gap-1 p-4 md:p-6 text-center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    text-align: center;
+    border-radius: var(--radius-card);
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--border-color);
+    background: var(--bg-card);
+    box-shadow: var(--shadow-sm);
+    padding: 1.25rem 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .stat-card {
+      padding: 1.5rem;
+    }
   }
 
   .section-title {
-    @apply text-3xl md:text-4xl font-bold text-gradient mb-8 md:mb-12 text-center;
+    font-family: var(--font-display), system-ui, sans-serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .section-title {
+      font-size: 1.875rem;
+      margin-bottom: 2rem;
+    }
+  }
+
+  .section-title-accent {
+    position: relative;
+    display: inline-block;
+    padding-bottom: 0.25rem;
+  }
+  .section-title-accent::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    width: 100%;
+    border-radius: 9999px;
+    background: var(--accent);
+  }
+
+  [data-game='valorant'] .section-title-accent::after {
+    box-shadow: 0 0 12px var(--accent);
+  }
+
+  .badge-win {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 6px;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--badge-win-bg);
+    color: var(--badge-win-text);
+  }
+
+  .badge-loss {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 6px;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--badge-loss-bg);
+    color: var(--badge-loss-text);
   }
 }
 
 .reveal {
   opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
+  transform: translateY(24px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
 }
 .reveal.visible {
   opacity: 1;
@@ -71,8 +203,8 @@ body {
 }
 .reveal-left {
   opacity: 0;
-  transform: translateX(-30px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
+  transform: translateX(-24px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
 }
 .reveal-left.visible {
   opacity: 1;
@@ -80,31 +212,61 @@ body {
 }
 .reveal-right {
   opacity: 0;
-  transform: translateX(30px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
+  transform: translateX(24px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
 }
 .reveal-right.visible {
   opacity: 1;
   transform: translateX(0);
 }
 
-.stagger-1 { transition-delay: 100ms; }
-.stagger-2 { transition-delay: 200ms; }
-.stagger-3 { transition-delay: 300ms; }
-.stagger-4 { transition-delay: 400ms; }
-.stagger-5 { transition-delay: 500ms; }
-.stagger-6 { transition-delay: 600ms; }
+.stagger-1 {
+  transition-delay: 80ms;
+}
+.stagger-2 {
+  transition-delay: 160ms;
+}
+.stagger-3 {
+  transition-delay: 240ms;
+}
+.stagger-4 {
+  transition-delay: 320ms;
+}
+.stagger-5 {
+  transition-delay: 400ms;
+}
+.stagger-6 {
+  transition-delay: 480ms;
+}
 
 ::-webkit-scrollbar {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: var(--bg-secondary);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(124, 58, 237, 0.4);
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(124, 58, 237, 0.6);
+
+[data-game='cs2'] .animate-glow {
+  animation: none;
+  box-shadow: none;
+}
+
+[data-game='valorant'] .animate-glow {
+  animation: valPulse 3s ease-in-out infinite;
+}
+
+@keyframes valPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 24px rgba(255, 70, 85, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 40px rgba(255, 70, 85, 0.55),
+      0 0 60px rgba(0, 229, 255, 0.12);
+  }
 }

@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import LiveStatus from './LiveStatus.svelte';
+  import GameSwitcher from './GameSwitcher.svelte';
+  import { showDevSetupHints } from '../lib/devHints';
 
   let { apiUrl = 'http://127.0.0.1:8000/api/v1' } = $props();
 
@@ -25,6 +27,7 @@
     faceit_color_hex?: string | null;
     premier_rating?: number | null;
     premier_color_hex?: string | null;
+    riot_api_configured?: boolean;
   };
 
   let profile: Profile | null = $state(null);
@@ -33,139 +36,170 @@
     try {
       const res = await fetch(`${apiUrl}/me/`);
       if (res.ok) profile = await res.json();
-    } catch { /* backend offline, use defaults */ }
+    } catch {
+      /* backend offline */
+    }
   });
 
   function fmt(n: number): string {
     return n.toLocaleString();
   }
+
+  const displayName = $derived(profile?.faceit_nickname || profile?.nickname || 'pmec');
 </script>
 
-<section id="overview" class="min-h-screen flex items-center pt-24 pb-16">
-  <div class="max-w-6xl mx-auto px-5 w-full">
-    <div class="flex flex-col lg:flex-row items-center gap-12">
+<section id="overview" class="px-4 pb-8 pt-6 md:px-8 md:pb-10 md:pt-8">
+  <div
+    class="relative mx-auto max-w-4xl overflow-hidden border border-game bg-game-card px-6 py-10 md:px-12 md:py-12"
+    style="border-radius: var(--radius-hero);"
+  >
+    <div class="hero-waves" aria-hidden="true">
+      <svg viewBox="0 0 1440 320" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+        <path
+          opacity="0.35"
+          d="M0 160C240 80 480 240 720 200C960 160 1200 40 1440 100V320H0V160Z"
+          fill="currentColor"
+        />
+      </svg>
+    </div>
+
+    <div class="relative flex flex-col items-center gap-8">
       <div class="relative reveal">
-        <!-- Double border: outer = Premier, inner = FACEIT -->
-        <div
-          class="w-44 h-44 md:w-52 md:h-52 rounded-full p-1 shrink-0"
-          style="background: {profile?.premier_color_hex ?? 'var(--color-primary-500)'};"
-        >
-          <div
-            class="w-full h-full rounded-full p-1.5"
-            style="background: {profile?.faceit_color_hex ?? 'var(--color-primary-500)'};"
-          >
+        <div class="animate-glow rounded-full p-[3px]" style="background: var(--accent); box-shadow: var(--avatar-glow, none);">
+          <div class="rounded-full bg-game-card p-[3px]">
             <img
-              src={profile?.avatar_url ?? 'https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg'}
-              alt="pmec"
-              class="w-full h-full rounded-full object-cover animate-glow"
+              src={profile?.avatar_url ??
+                'https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg'}
+              alt={displayName}
+              class="h-28 w-28 rounded-full object-cover md:h-36 md:w-36"
             />
           </div>
         </div>
-        {#if profile?.faceit_level != null}
-          <div
-            class="absolute -bottom-2 left-1/2 -translate-x-1/2 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg border border-white/20"
-            style="background-color: {profile.faceit_color_hex ?? 'var(--color-primary-600)'};"
-          >
-            LVL {profile.faceit_level}
-          </div>
-        {:else}
-          <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-primary-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-            LVL 10
-          </div>
-        {/if}
+        <div
+          class="absolute -bottom-1 left-1/2 flex -translate-x-1/2 flex-col items-center border border-game bg-game-secondary px-3 py-1 text-center"
+          style="border-radius: calc(var(--radius-card) - 2px);"
+        >
+          <span class="text-lg font-bold leading-none text-game-accent">
+            {profile?.faceit_level ?? 10}
+          </span>
+          <span class="text-[0.65rem] font-medium uppercase tracking-wider text-game-muted">FACEIT</span>
+        </div>
       </div>
 
-      <div class="text-center lg:text-left reveal stagger-1">
-        <h1 class="text-5xl md:text-6xl font-extrabold text-gradient mb-3">pmec</h1>
-        <div class="mb-4">
-          <LiveStatus apiUrl={apiUrl} />
-        </div>
+      <div class="reveal stagger-1 flex w-full max-w-xl flex-col items-center gap-5 text-center">
+        <h1 class="font-display text-3xl font-semibold tracking-tight text-game-primary md:text-4xl">
+          {displayName}
+        </h1>
+        <LiveStatus
+          apiUrl={apiUrl}
+          faceitSyncVisible={showDevSetupHints || profile?.api_configured === true}
+        />
 
-        {#if profile && !profile.api_configured}
-          <div class="mb-4 px-4 py-2 rounded-lg border border-amber-500 border-opacity-30 text-sm" style="background: rgba(245,158,11,0.08);">
-            <span class="text-amber-400 font-semibold">FACEIT API key not configured</span>
-            <span class="text-zinc-500"> — Add your key to <code class="text-zinc-400">backend/.env</code> then click Sync to pull real matches</span>
+        {#if profile && !profile.api_configured && showDevSetupHints}
+          <div
+            class="w-full border border-game bg-game-muted px-4 py-3 text-left text-sm text-game-secondary"
+            style="border-radius: var(--radius-card);"
+          >
+            <span class="font-semibold text-game-accent">FACEIT API key not configured</span>
+            <span class="text-game-muted">
+              — Add <code class="rounded bg-game-card px-1 font-mono text-xs">FACEIT_API_KEY</code> to backend env, then sync.</span
+            >
           </div>
         {/if}
 
-        <div class="flex flex-wrap gap-3 justify-center lg:justify-start">
+        {#if profile?.riot_api_configured && showDevSetupHints}
+          <p class="text-center text-xs text-game-muted">
+            Riot API ready — use the <a href="/valorant" class="text-game-accent underline hover:no-underline">Valorant</a> page
+            or set <code class="font-mono">RIOT_GAME_NAME</code> / <code class="font-mono">RIOT_TAG_LINE</code>.
+          </p>
+        {/if}
+
+        <div class="flex flex-wrap items-center justify-center gap-2">
           {#if profile?.premier_rating != null && profile?.premier_color_hex}
             <span
-              class="px-4 py-1.5 rounded-full text-sm font-semibold border border-white/20 text-white"
-              style="background-color: {profile.premier_color_hex};"
+              class="border border-game px-3 py-1 text-xs font-semibold text-white"
+              style="border-radius: var(--radius-card); background-color: {profile.premier_color_hex};"
             >
               Premier {profile.premier_rating.toLocaleString()}
             </span>
           {:else}
-            <span class="px-4 py-1.5 rounded-full text-sm font-semibold border border-amber-500 border-opacity-30 text-amber-400" style="background: rgba(245,158,11,0.1);">
-              {profile?.rank ?? 'Global Sentinel'}
+            <span
+              class="border border-game bg-game-muted px-3 py-1 text-xs font-semibold text-game-primary"
+              style="border-radius: var(--radius-card);"
+            >
+              {profile?.rank ?? 'Premier'}
             </span>
           {/if}
           {#if profile?.faceit_color_hex}
             <span
-              class="px-4 py-1.5 rounded-full text-sm font-semibold border border-white/20 text-white"
-              style="background-color: {profile.faceit_color_hex};"
+              class="border border-game px-3 py-1 text-xs font-semibold text-white"
+              style="border-radius: var(--radius-card); background-color: {profile.faceit_color_hex};"
             >
-              ELO {profile?.elo ?? 2616}
+              ELO {profile?.elo ?? '—'}
             </span>
           {:else}
-            <span class="px-4 py-1.5 rounded-full text-sm font-semibold border border-primary-500 border-opacity-30 text-primary-400" style="background: rgba(124,58,237,0.1);">
-              ELO {profile?.elo ?? 2616}
+            <span
+              class="border border-[var(--accent)]/30 bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-game-accent"
+              style="border-radius: var(--radius-card);"
+            >
+              ELO {profile?.elo ?? '—'}
             </span>
           {/if}
-          <span class="px-4 py-1.5 rounded-full text-sm font-semibold border border-white border-opacity-10 text-zinc-300" style="background: rgba(255,255,255,0.03);">
-            {fmt(profile?.total_hours ?? 9620)}h played
+          <span
+            class="border border-game bg-game-muted px-3 py-1 text-xs font-medium text-game-muted"
+            style="border-radius: var(--radius-card);"
+          >
+            {fmt(profile?.total_hours ?? 0)}h
           </span>
-          <span class="px-4 py-1.5 rounded-full text-sm font-semibold border border-white border-opacity-10 text-zinc-300" style="background: rgba(255,255,255,0.03);">
+          <span
+            class="border border-game bg-game-muted px-3 py-1 text-xs font-medium text-game-muted"
+            style="border-radius: var(--radius-card);"
+          >
             {fmt(profile?.total_matches ?? 0)} matches
           </span>
         </div>
-      </div>
 
-      <div class="flex-1 w-full lg:w-auto reveal stagger-2">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="grid w-full max-w-md grid-cols-3 gap-2 pt-2 md:gap-3">
           <div class="stat-card">
-            <span class="text-xl md:text-2xl font-extrabold text-cs-green">
-              {profile ? profile.win_rate.toFixed(1) : '--'}%
+            <span class="text-[0.65rem] font-semibold uppercase tracking-wider text-game-muted">Win rate</span>
+            <span class="font-mono text-xl font-bold text-game-accent md:text-2xl">
+              {profile ? `${profile.win_rate.toFixed(1)}%` : '—'}
             </span>
-            <span class="text-xs uppercase tracking-wider text-zinc-500">Win Rate</span>
           </div>
           <div class="stat-card">
-            <span class="text-xl md:text-2xl font-extrabold">
-              {profile ? profile.overall_kd.toFixed(2) : '--'}
+            <span class="text-[0.65rem] font-semibold uppercase tracking-wider text-game-muted">K/D</span>
+            <span class="font-mono text-xl font-bold text-game-primary md:text-2xl">
+              {profile ? profile.overall_kd.toFixed(2) : '—'}
             </span>
-            <span class="text-xs uppercase tracking-wider text-zinc-500">K/D</span>
           </div>
           <div class="stat-card">
-            <span class="text-xl md:text-2xl font-extrabold text-amber-400">
-              {profile ? profile.headshot_pct.toFixed(1) : '--'}%
+            <span class="text-[0.65rem] font-semibold uppercase tracking-wider text-game-muted">HS%</span>
+            <span class="font-mono text-xl font-bold text-game-accent md:text-2xl">
+              {profile ? `${profile.headshot_pct.toFixed(0)}%` : '—'}
             </span>
-            <span class="text-xs uppercase tracking-wider text-zinc-500">HS %</span>
-          </div>
-          <div class="stat-card">
-            <span class="text-xl md:text-2xl font-extrabold">
-              {fmt(profile?.total_wins ?? 0)}
-            </span>
-            <span class="text-xs uppercase tracking-wider text-zinc-500">Wins</span>
           </div>
         </div>
 
         {#if profile?.favorite_map || profile?.favorite_weapon}
-          <div class="grid grid-cols-2 gap-3 mt-3">
+          <div class="grid w-full max-w-lg grid-cols-1 gap-2 sm:grid-cols-2">
             {#if profile?.favorite_map}
-              <div class="stat-card">
-                <span class="text-lg font-bold text-primary-400">{profile.favorite_map}</span>
-                <span class="text-xs uppercase tracking-wider text-zinc-500">Top Map</span>
+              <div class="border border-game bg-game-muted px-4 py-3 text-center" style="border-radius: var(--radius-card);">
+                <span class="text-xs font-semibold uppercase tracking-wider text-game-muted">Top map</span>
+                <span class="mt-1 block font-display text-lg font-semibold text-game-accent">{profile.favorite_map}</span>
               </div>
             {/if}
             {#if profile?.favorite_weapon}
-              <div class="stat-card">
-                <span class="text-lg font-bold text-primary-400">{profile.favorite_weapon}</span>
-                <span class="text-xs uppercase tracking-wider text-zinc-500">Top Weapon</span>
+              <div class="border border-game bg-game-muted px-4 py-3 text-center" style="border-radius: var(--radius-card);">
+                <span class="text-xs font-semibold uppercase tracking-wider text-game-muted">Top weapon</span>
+                <span class="mt-1 block font-display text-lg font-semibold text-game-accent"
+                  >{profile.favorite_weapon}</span
+                >
               </div>
             {/if}
           </div>
         {/if}
+
+        <GameSwitcher current="cs2" />
       </div>
     </div>
   </div>

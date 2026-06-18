@@ -28,33 +28,33 @@
   });
 </script>
 
-<h3 class="text-lg font-bold text-white mb-4">CS:GO / Classic Stats</h3>
+<h3 class="mb-4 font-display text-lg font-semibold text-game-primary">CS2 classic stats</h3>
 
 {#if error}
-  <p class="text-red-400 text-sm">{error}</p>
+  <p class="text-sm text-red-600">{error}</p>
 {:else if !stats}
-  <p class="text-zinc-500 text-sm">Loading classic stats…</p>
+  <p class="text-sm text-game-muted">Loading classic stats…</p>
 {:else}
   <div class="grid grid-cols-2 gap-3 text-sm">
     <div class="flex flex-col">
-      <span class="text-xs uppercase tracking-wider text-zinc-500">Total Kills</span>
-      <span class="text-lg font-semibold">{stats.total_kills.toLocaleString()}</span>
+      <span class="text-xs font-medium uppercase tracking-wider text-game-muted">Total kills</span>
+      <span class="text-lg font-semibold text-game-primary">{stats.total_kills.toLocaleString()}</span>
     </div>
     <div class="flex flex-col">
-      <span class="text-xs uppercase tracking-wider text-zinc-500">Total Deaths</span>
-      <span class="text-lg font-semibold">{stats.total_deaths.toLocaleString()}</span>
+      <span class="text-xs font-medium uppercase tracking-wider text-game-muted">Total deaths</span>
+      <span class="text-lg font-semibold text-game-primary">{stats.total_deaths.toLocaleString()}</span>
     </div>
     <div class="flex flex-col">
-      <span class="text-xs uppercase tracking-wider text-zinc-500">K/D</span>
-      <span class="text-lg font-semibold">{stats.kd.toFixed(2)}</span>
+      <span class="text-xs font-medium uppercase tracking-wider text-game-muted">K/D</span>
+      <span class="text-lg font-semibold text-game-accent">{stats.kd.toFixed(2)}</span>
     </div>
     <div class="flex flex-col">
-      <span class="text-xs uppercase tracking-wider text-zinc-500">Wins</span>
-      <span class="text-lg font-semibold">{stats.total_wins.toLocaleString()}</span>
+      <span class="text-xs font-medium uppercase tracking-wider text-game-muted">Wins</span>
+      <span class="text-lg font-semibold text-game-primary">{stats.total_wins.toLocaleString()}</span>
     </div>
-    <div class="flex flex-col col-span-2">
-      <span class="text-xs uppercase tracking-wider text-zinc-500">Total Time Played</span>
-      <span class="text-lg font-semibold">{stats.total_time_hours.toFixed(1)} hours</span>
+    <div class="col-span-2 flex flex-col">
+      <span class="text-xs font-medium uppercase tracking-wider text-game-muted">Total time played</span>
+      <span class="text-lg font-semibold text-game-primary">{stats.total_time_hours.toFixed(1)} hours</span>
     </div>
   </div>
 {/if}
